@@ -154,10 +154,6 @@ namespace Death_Game_Launcher
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
-            gp.AddEllipse(0, 0, pictureBox1.Width/* - 3*/, pictureBox1.Height/* - 3*/);
-            Region rg = new Region(gp);
-            pictureBox1.Region = rg;
             this.closeCheckBox.Checked = new Config().CloseOnLaunch;
         }
 
@@ -171,11 +167,6 @@ namespace Death_Game_Launcher
             Config config = new Config();
             config.CloseOnLaunch = closeCheckBox.Checked;
             config.Save();
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show(new Random().Next(2).ToString());
         }
     }
 
