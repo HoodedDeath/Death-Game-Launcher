@@ -21,7 +21,7 @@ namespace Death_Game_Launcher
         {
             Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
-            if (MessageBox.Show(/*"Scanning may take up a significant amount of memory for the games found (approximately 1mb per game found). Low memory environments may run into issues. Would you like to continue with scan?"*/ "Scan Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes) //Test
+            if (MessageBox.Show(/*"Scanning may take up a significant amount of memory for the games found (approximately 1mb per game found). Low memory environments may run into issues. Would you like to continue with scan?"*/ "Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes) //Test
             {
                 thread.Start();
                 ListGames(Scan());
