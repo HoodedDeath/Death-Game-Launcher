@@ -70,6 +70,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddGameForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddGameForm.Designer.cs">
+      <DependentUpon>AddGameForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Config.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
@@ -101,6 +107,9 @@
     <Compile Include="ShortcutSettings.Designer.cs">
       <DependentUpon>ShortcutSettings.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="AddGameForm.resx">
+      <DependentUpon>AddGameForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

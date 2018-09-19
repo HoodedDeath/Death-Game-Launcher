@@ -16,6 +16,7 @@ namespace Death_Game_Launcher
     public partial class Form1 : Form
     {
         public static int isExit = 0;
+        private Manifest[] games = new Manifest[0];
         private LoadingForm loadingForm = new LoadingForm();
         public Form1()
         {
@@ -127,12 +128,14 @@ namespace Death_Game_Launcher
             }
             catch { }
             manifests.Sort((x, y) => x.name.CompareTo(y.name));
+            this.games = manifests.ToArray<Manifest>();
             return manifests.ToArray<Manifest>();
         }
 
         private int[] location = new int[] { 3, -83 };
         private void ListGames(Manifest[] m)
         {
+            panel1.Controls.Clear();
             if (m == null || m.Count() == 0) return;
             panel1.AutoScrollPosition = new Point(0, 0);
             for (int i = 0; i < m.Length; i++)
@@ -167,6 +170,11 @@ namespace Death_Game_Launcher
             Config config = new Config();
             config.CloseOnLaunch = closeCheckBox.Checked;
             config.Save();
+        }
+
+        private void addGameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new AddGameForm().Show();
         }
     }
 
