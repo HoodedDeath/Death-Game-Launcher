@@ -25,6 +25,7 @@ namespace Death_Game_Launcher
             this.AllowDrop = true;
             this.DragEnter += new DragEventHandler(GameDrag);
             this.DragDrop += new DragEventHandler(GameDrop);
+            AddGroup();
         }
         private void GameDrag(object sender, DragEventArgs e)
         {
@@ -40,6 +41,15 @@ namespace Death_Game_Launcher
         {
 
         }
+        private void AddGroup()
+        {
+            panel1.AutoScrollPosition = new Point(0, 0);
+            AddGameGrouping g = new AddGameGrouping();
+            g.Location = new Point(location[0], location[1] += 136);
+            panel1.Controls.Add(g.Group);
+            count++;
+            if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
+        }
 
         private void BrowseButton_Click(object sender, EventArgs e)
         {
@@ -48,9 +58,9 @@ namespace Death_Game_Launcher
             string path = d.FileName;
             pathTextBox.Text = path;
             MessageBox.Show(path);
-            /*string[] splitpath = path.Split('\\');
-            if (nameTextBox.Text == null || nameTextBox.Text == "")
+            /*if (nameTextBox.Text == null || nameTextBox.Text == "")
             {
+                string[] splitpath = path.Split('\\');
                 string name = splitpath[splitpath.Length - 1].Split('.')[0];
                 nameTextBox.Text = name;
                 MessageBox.Show(name);
@@ -70,11 +80,12 @@ namespace Death_Game_Launcher
         {
             foreach (GroupBox g in panel1.Controls)
             {
+                CheckBox check = (CheckBox)(g.Controls.Find("steamCheckBox", true)[0]);
                 games.Add(new Game()
                 {
                     name = g.Controls.Find("nameTextBox", true)[0].Text,
                     path = g.Controls.Find("pathTextBox", true)[0].Text,
-                    isSteam = g.Controls.Find("steamCheckBox", true)[0].Checked
+                    isSteam = ((CheckBox)(g.Controls.Find("steamCheckBox", true)[0])).Checked
                 });
             }
             this.DialogResult = DialogResult.OK;
@@ -102,6 +113,27 @@ namespace Death_Game_Launcher
         private void Remove_Click(object sender, EventArgs e)
         {
             //Does nothing yet. Removal from list will be add soon
+        }
+
+        private int[] location = new int[] { 3, -133 };
+        private int count = 0;
+        private void AddGame_Click(object sender, EventArgs e)
+        {
+            Control[] groupbox = panel1.Controls.Find("GroupBox", false);
+            Control[] textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true);
+            TextBox box = (TextBox)textbox[0];
+            string lastpath = box.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
+            bool lastempty = !(lastpath == null || lastpath == "");
+
+            if (lastempty)
+            {
+                panel1.AutoScrollPosition = new Point(0, 0);
+                AddGameGrouping g = new AddGameGrouping();
+                g.Location = new Point(location[0], location[1] += 136);
+                panel1.Controls.Add(g.Group);
+                count++;
+                if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
+            }
         }
     }
 
