@@ -122,6 +122,7 @@ namespace Death_Game_Launcher
             Control[] groupbox = panel1.Controls.Find("GroupBox", false);
             Control[] textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true);
             TextBox box = (TextBox)textbox[0];
+            bool useless = false;
             string lastpath = box.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
             bool lastempty = !(lastpath == null || lastpath == "");
 
