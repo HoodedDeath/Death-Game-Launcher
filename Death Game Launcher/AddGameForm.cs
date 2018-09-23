@@ -80,12 +80,16 @@ namespace Death_Game_Launcher
         {
             foreach (GroupBox g in panel1.Controls)
             {
-                CheckBox check = (CheckBox)(g.Controls.Find("steamCheckBox", true)[0]);
+                //CheckBox check = (CheckBox)(g.Controls.Find("steamCheckBox", true)[0]);
+                CheckBox check = g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox;
                 games.Add(new Game()
                 {
-                    name = g.Controls.Find("nameTextBox", true)[0].Text,
-                    path = g.Controls.Find("pathTextBox", true)[0].Text,
-                    isSteam = ((CheckBox)(g.Controls.Find("steamCheckBox", true)[0])).Checked
+                    //name = g.Controls.Find("nameTextBox", true)[0].Text,
+                    name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
+                    //path = g.Controls.Find("pathTextBox", true)[0].Text,
+                    path = (g.Control.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
+                    //isSteam = ((CheckBox)(g.Controls.Find("steamCheckBox", true)[0])).Checked
+                    isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
                 });
             }
             this.DialogResult = DialogResult.OK;
@@ -112,7 +116,7 @@ namespace Death_Game_Launcher
 
         private void Remove_Click(object sender, EventArgs e)
         {
-            //Does nothing yet. Removal from list will be add soon
+            //Does nothing yet. Removal from list will be added soon
         }
 
         private int[] location = new int[] { 3, -133 };
@@ -120,10 +124,10 @@ namespace Death_Game_Launcher
         private void AddGame_Click(object sender, EventArgs e)
         {
             Control[] groupbox = panel1.Controls.Find("GroupBox", false);
-            Control[] textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true);
-            TextBox box = (TextBox)textbox[0];
+            TextBox textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
+            //TextBox box = (TextBox)textbox[0];
             bool useless = false;
-            string lastpath = box.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
+            string lastpath = textbox.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
             bool lastempty = !(lastpath == null || lastpath == "");
 
             if (lastempty)
