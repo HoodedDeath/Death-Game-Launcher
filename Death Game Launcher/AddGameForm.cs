@@ -87,7 +87,7 @@ namespace Death_Game_Launcher
                     //name = g.Controls.Find("nameTextBox", true)[0].Text,
                     name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
                     //path = g.Controls.Find("pathTextBox", true)[0].Text,
-                    path = (g.Control.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
+                    path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
                     //isSteam = ((CheckBox)(g.Controls.Find("steamCheckBox", true)[0])).Checked
                     isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
                 });
