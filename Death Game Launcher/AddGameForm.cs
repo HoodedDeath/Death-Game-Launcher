@@ -123,21 +123,24 @@ namespace Death_Game_Launcher
         private int count = 0;
         private void AddGame_Click(object sender, EventArgs e)
         {
-            Control[] groupbox = panel1.Controls.Find("GroupBox", false);
-            TextBox textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
-            //TextBox box = (TextBox)textbox[0];
-            string lastpath = textbox.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
-            bool lastempty = !(lastpath == null || lastpath == "");
-
-            if (lastempty)
+            try
             {
-                panel1.AutoScrollPosition = new Point(0, 0);
-                AddGameGrouping g = new AddGameGrouping();
-                g.Location = new Point(location[0], location[1] += 136);
-                panel1.Controls.Add(g.Group);
-                count++;
-                if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
-            }
+                Control[] groupbox = panel1.Controls.Find("GroupBox", false);
+                TextBox textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
+                //TextBox box = (TextBox)textbox[0];
+                string lastpath = textbox.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
+                bool lastempty = !(lastpath == null || lastpath == "");
+
+                if (lastempty)
+                {
+                    panel1.AutoScrollPosition = new Point(0, 0);
+                    AddGameGrouping g = new AddGameGrouping();
+                    g.Location = new Point(location[0], location[1] += 136);
+                    panel1.Controls.Add(g.Group);
+                    count++;
+                    if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
+                }
+            } catch { }
         }
     }
 
