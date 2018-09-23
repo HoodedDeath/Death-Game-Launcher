@@ -174,7 +174,23 @@ namespace Death_Game_Launcher
 
         private void addGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            new AddGameForm().Show();
+            using (var form = new AddGameForm())
+            {
+                form.ShowDialog();
+                if (form.DialogResult == DialogResult.OK)
+                {
+                    List<Manifest> manifests = new List<Manifest>();
+                    foreach (AddGameForm.Game g in form.Games)
+                    {
+                        manifests.Add(new Manifest
+                        {
+                            name = g.name,
+                            id = g.path
+                        });
+                    }
+                    ListGames(manifests.ToArray());
+                }
+            }
         }
     }
 
@@ -193,7 +209,7 @@ namespace Death_Game_Launcher
             this.path = "steam://rungameid/" + path;
             this.id = path;
             this.name = gameName;
-            int i = new Random().Next(2);
+            int i = new Random().Next(1, 7);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             // 
             // iconBox
@@ -203,7 +219,7 @@ namespace Death_Game_Launcher
                 this.iconBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Logo_Inv;
             else
                 this.iconBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Logo;*/
-            this.iconBox.BackgroundImage = (i == 1) ? global::Death_Game_Launcher.Properties.Resources.Logo_n_inv : global::Death_Game_Launcher.Properties.Resources.Logo_n;
+            this.iconBox.BackgroundImage = (/*i == 1*/ i % 2 == 0) ? global::Death_Game_Launcher.Properties.Resources.Logo_n_inv : global::Death_Game_Launcher.Properties.Resources.Logo_n;
             //this.iconBox.BackgroundImage = Properties.Resources.Logo_n;
             this.iconBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.iconBox.Location = new System.Drawing.Point(6, 19);

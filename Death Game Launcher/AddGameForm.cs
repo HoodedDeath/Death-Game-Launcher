@@ -12,8 +12,10 @@ namespace Death_Game_Launcher
 {
     public partial class AddGameForm : Form
     {
-        private List<Game> games = new List<Game>();
-        struct Game
+        //public List<Game> games = new List<Game>();
+        private List<string> groupBoxes = new List<string>();
+        public List<Game> Games { get; set; } = new List<Game>();
+        public struct Game
         {
             public string name;
             public string path;
@@ -22,6 +24,7 @@ namespace Death_Game_Launcher
         public AddGameForm()
         {
             InitializeComponent();
+            //this.Games = new List<Game>();
             this.AllowDrop = true;
             this.DragEnter += new DragEventHandler(GameDrag);
             this.DragDrop += new DragEventHandler(GameDrop);
@@ -44,10 +47,17 @@ namespace Death_Game_Launcher
         private void AddGroup()
         {
             panel1.AutoScrollPosition = new Point(0, 0);
-            AddGameGrouping g = new AddGameGrouping();
-            g.Location = new Point(location[0], location[1] += 136);
+            /*AddGameGrouping g = new AddGameGrouping();
+            g.Location = new Point(location[0], location[1] += 136);*/
+            AddGameGrouping g = new AddGameGrouping
+            {
+                Location = new Point(location[0], location[1] += 136),
+                BoxName = "groupBox" + this.count++
+            };
             panel1.Controls.Add(g.Group);
-            count++;
+            //count++;
+            groupBoxes.Add(g.BoxName);
+            MessageBox.Show(g.BoxName);
             if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
         }
 
@@ -80,15 +90,17 @@ namespace Death_Game_Launcher
         {
             foreach (GroupBox g in panel1.Controls)
             {
-                //CheckBox check = (CheckBox)(g.Controls.Find("steamCheckBox", true)[0]);
-                CheckBox check = g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox;
-                games.Add(new Game()
+                //CheckBox check = g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox;
+                /*games.Add(new Game()
                 {
-                    //name = g.Controls.Find("nameTextBox", true)[0].Text,
                     name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
-                    //path = g.Controls.Find("pathTextBox", true)[0].Text,
                     path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
-                    //isSteam = ((CheckBox)(g.Controls.Find("steamCheckBox", true)[0])).Checked
+                    isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
+                });*/
+                this.Games.Add(new Game()
+                {
+                    name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
+                    path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
                     isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
                 });
             }
@@ -123,24 +135,28 @@ namespace Death_Game_Launcher
         private int count = 0;
         private void AddGame_Click(object sender, EventArgs e)
         {
-            try
-            {
-                Control[] groupbox = panel1.Controls.Find("GroupBox", false);
-                TextBox textbox = groupbox[groupbox.Length - 1].Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
-                //TextBox box = (TextBox)textbox[0];
-                string lastpath = textbox.Text; // ((TextBox)panel1.Controls.Find("GroupBox", false)[panel1.Controls.Find("GroupBox", false).Length - 1].Controls.Find("pathTextBox", true)[0]).Text;
-                bool lastempty = !(lastpath == null || lastpath == "");
+            Control[] groupbox = panel1.Controls.Find(groupBoxes[count - 1], false);
+            TextBox textbox = new TextBox { Text = "#FAILED#" };
+            if (groupbox != null && groupbox.Length > 0)
+                textbox = groupbox.LastOrDefault().Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
+            string lastpath = "";
+            if (textbox != null && textbox.Text != "#FAILED#")
+                 lastpath= textbox.Text;
+            bool lastempty = !(lastpath == null || lastpath == "");
 
-                if (lastempty)
+            if (lastempty)
+            {
+                panel1.AutoScrollPosition = new Point(0, 0);
+                AddGameGrouping g = new AddGameGrouping
                 {
-                    panel1.AutoScrollPosition = new Point(0, 0);
-                    AddGameGrouping g = new AddGameGrouping();
-                    g.Location = new Point(location[0], location[1] += 136);
-                    panel1.Controls.Add(g.Group);
-                    count++;
-                    if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
-                }
-            } catch { }
+                    Location = new Point(location[0], location[1] += 136),
+                    BoxName = "groupBox" + count++
+                };
+                panel1.Controls.Add(g.Group);
+                groupBoxes.Add(g.BoxName);
+                MessageBox.Show(g.BoxName);
+                if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
+            }
         }
     }
 
@@ -259,6 +275,11 @@ namespace Death_Game_Launcher
         public string Path { get { return this.pathTextBox.Text; } }
         public string Name { get { return this.nameTextBox.Text; } }
         public bool IsSteamLaunch { get { return this.steamCheckBox.Checked; } }
+        public string BoxName
+        {
+            get { return this.groupBox1.Name; }
+            set { this.groupBox1.Name = value; }
+        }
 
         private void Remove_Click(object sender, EventArgs e)
         {
