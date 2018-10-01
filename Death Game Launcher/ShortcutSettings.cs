@@ -16,7 +16,12 @@ namespace Death_Game_Launcher
         {
             InitializeComponent();
         }*/
-
+        public ShortcutSettings(string name, string id, bool isSteamLaunch)
+        {
+            InitializeComponent();
+            nameLabel.Text = name;
+            idLabel.Text = id;
+        }
         public ShortcutSettings(string name, string id)
         {
             InitializeComponent();

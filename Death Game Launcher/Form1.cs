@@ -56,7 +56,9 @@ namespace Death_Game_Launcher
         private struct Manifest
         {
             public string name;
-            public string id;
+            //public string id;
+            public string path;
+            public bool steamLaunch;
         }
         //Scans paths for games
         private Manifest[] Scan()
@@ -79,10 +81,11 @@ namespace Death_Game_Launcher
                         StreamReader sr = new StreamReader(File.OpenRead(s));
                         sr.ReadLine(); sr.ReadLine();
                         string[] t = sr.ReadLine().Split('"');
-                        manifest.id = t[t.Length - 2];
+                        manifest.path = t[t.Length - 2];
                         sr.ReadLine();
                         t = null; t = sr.ReadLine().Split('"');
                         manifest.name = t[t.Length - 2];
+                        manifest.steamLaunch = true;
                         sr.Close();
                         sr.Dispose();
                         if (!manifests.Contains(manifest)) manifests.Add(manifest);
@@ -116,10 +119,11 @@ namespace Death_Game_Launcher
                         StreamReader sr = new StreamReader(File.OpenRead(file));
                         sr.ReadLine();sr.ReadLine();
                         string[] t = sr.ReadLine().Split('"');
-                        manifest.id = t[t.Length - 2];
+                        manifest.path = t[t.Length - 2];
                         sr.ReadLine();
                         t = null; t = sr.ReadLine().Split('"');
                         manifest.name = t[t.Length - 2];
+                        manifest.steamLaunch = true;
                         sr.Close();
                         sr.Dispose();
                         if (!manifests.Contains(manifest)) manifests.Add(manifest);
@@ -140,7 +144,7 @@ namespace Death_Game_Launcher
             panel1.AutoScrollPosition = new Point(0, 0);
             for (int i = 0; i < m.Length; i++)
             {
-                Grouping group = new Grouping(m[i].name, m[i].id);
+                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch);
                 if (i % 4 == 0)
                     group.Location = new Point(location[0], location[1] += 86);
                 else
@@ -185,7 +189,8 @@ namespace Death_Game_Launcher
                         manifests.Add(new Manifest
                         {
                             name = g.name,
-                            id = g.path
+                            path = g.path,
+                            steamLaunch = g.isSteam
                         });
                     }
                     ListGames(manifests.ToArray());
@@ -202,13 +207,15 @@ namespace Death_Game_Launcher
         private PictureBox launchBox = new PictureBox();
         private string path = "";
         private string name = "";
-        private string id = "";
+        //private string id = "";
+        private bool isSteamLaunch = false;
 
-        public Grouping(string gameName, string path)
+        public Grouping(string name, string path, bool steamLaunch)
         {
-            this.path = "steam://rungameid/" + path;
-            this.id = path;
-            this.name = gameName;
+            this.path = path;
+            //this.id = path;
+            this.name = name;
+            this.isSteamLaunch = steamLaunch;
             int i = new Random().Next(1, 7);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             // 
@@ -259,7 +266,7 @@ namespace Death_Game_Launcher
             this.groupBox.Name = "groupBox";
             this.groupBox.Size = new System.Drawing.Size(230, 80);
             this.groupBox.TabStop = false;
-            this.groupBox.Text = Truncate(gameName, 22);
+            this.groupBox.Text = Truncate(name, 22);
 
             //Add circle border to Play Button
             System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
@@ -276,7 +283,15 @@ namespace Death_Game_Launcher
         {
             try
             {
-                System.Diagnostics.Process.Start("explorer.exe", path);
+                if (this.isSteamLaunch)
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", "steam://rungameid/" + path);
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start(path);
+                }
+                //System.Diagnostics.Process.Start("explorer.exe", path);
                 if (new Config().CloseOnLaunch)
                 {
                     Form1.isExit = 1;
@@ -303,7 +318,7 @@ namespace Death_Game_Launcher
         }
         private void Settings_App(object sender, EventArgs e)
         {
-            switch (this.id)
+            switch (this.path)
             {
                 case "":
                     Short(sender, e);
@@ -347,7 +362,7 @@ namespace Death_Game_Launcher
         }
         private void Short(object sender, EventArgs e)
         {
-            ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path);
+            ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path, this.isSteamLaunch);
             shortcut.Show();
         }
 
