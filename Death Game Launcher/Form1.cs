@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+//using IWshRuntimeLibrary;
 
 namespace Death_Game_Launcher
 {
@@ -20,6 +21,7 @@ namespace Death_Game_Launcher
         private LoadingForm loadingForm = new LoadingForm();
         public Form1()
         {
+            MessageBox.Show(Application.StartupPath);
             Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
             if (MessageBox.Show(/*"Scanning may take up a significant amount of memory for the games found (approximately 1mb per game found). Low memory environments may run into issues. Would you like to continue with scan?"*/ "Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes) //Test
@@ -78,7 +80,7 @@ namespace Death_Game_Launcher
                     try
                     {
                         Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(s));
+                        StreamReader sr = new StreamReader(System.IO.File.OpenRead(s));
                         sr.ReadLine(); sr.ReadLine();
                         string[] t = sr.ReadLine().Split('"');
                         manifest.path = t[t.Length - 2];
@@ -98,7 +100,7 @@ namespace Death_Game_Launcher
             {
                 string libraryFoldersFile = (string)ret + "\\steamapps\\libraryfolders.vdf";
                 List<string> libraryFolders = new List<string>();
-                StreamReader streamReader = new StreamReader(File.OpenRead(libraryFoldersFile));
+                StreamReader streamReader = new StreamReader(System.IO.File.OpenRead(libraryFoldersFile));
                 streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine();
                 for (; ; )
                 {
@@ -116,7 +118,7 @@ namespace Death_Game_Launcher
                     foreach (string file in files)
                     {
                         Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(file));
+                        StreamReader sr = new StreamReader(System.IO.File.OpenRead(file));
                         sr.ReadLine();sr.ReadLine();
                         string[] t = sr.ReadLine().Split('"');
                         manifest.path = t[t.Length - 2];
@@ -209,6 +211,7 @@ namespace Death_Game_Launcher
         private string name = "";
         //private string id = "";
         private bool isSteamLaunch = false;
+        private bool useShortcut = false;
 
         public Grouping(string name, string path, bool steamLaunch)
         {
@@ -289,7 +292,33 @@ namespace Death_Game_Launcher
                 }
                 else
                 {
-                    System.Diagnostics.Process.Start(path);
+                    
+                    DialogResult result = MessageBox.Show("Launch with a shortcut instead of exe?", "", MessageBoxButtons.YesNoCancel);
+                    if (result == DialogResult.Yes)
+                    {
+                        IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
+                        string spath = Path.Combine(Application.StartupPath, "temp.lnk");
+                        IWshRuntimeLibrary.IWshShortcut wsh = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(spath);
+                        wsh.TargetPath = this.path;
+                        string[] t = path.Split('\\');
+                        string tpath = "";
+                        for (int i = 0; i < t.Length-1;i++)
+                            if (i == 0)
+                                tpath += t[i];
+                            else
+                                tpath += "\\" + t[i];
+                        wsh.WorkingDirectory = tpath;
+                        wsh.Save();
+                        System.Diagnostics.Process.Start(spath);
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Process.Start(path);
+                    }
                 }
                 //System.Diagnostics.Process.Start("explorer.exe", path);
                 if (new Config().CloseOnLaunch)
@@ -324,11 +353,11 @@ namespace Death_Game_Launcher
                     Short(sender, e);
                     break;
                 case "264710": //Subnautica
-                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")))
+                    if (System.IO.File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")))
                     {
                         try
                         {
-                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")));
+                            StreamReader sr = new StreamReader(System.IO.File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")));
                             string path = sr.ReadLine();
                             sr.Close();
                             sr.Dispose();
@@ -340,11 +369,11 @@ namespace Death_Game_Launcher
                         Short(sender, e);
                     break;
                 case "105600": //Terraria
-                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")))
+                    if (System.IO.File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")))
                     {
                         try
                         {
-                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")));
+                            StreamReader sr = new StreamReader(System.IO.File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")));
                             string path = sr.ReadLine();
                             sr.Close();
                             sr.Dispose();
@@ -362,8 +391,20 @@ namespace Death_Game_Launcher
         }
         private void Short(object sender, EventArgs e)
         {
-            ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path, this.isSteamLaunch);
-            shortcut.Show();
+            /*ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path, this.isSteamLaunch);
+            shortcut.Show();*/
+            using (var form = new ShortcutSettings(this.name, this.path, this.isSteamLaunch, this.useShortcut))
+            {
+                DialogResult res = form.ShowDialog();
+                MessageBox.Show(form.DialogResult.ToString());
+                if (form.DialogResult == DialogResult.OK)
+                {
+                    this.name = form.GameName;
+                    this.path = form.GamePath;
+                    this.isSteamLaunch = form.IsSteamLaunch;
+                    this.useShortcut = form.UseShortcut;
+                }
+            }
         }
 
         /*private void Settings_Click(object sender, EventArgs e)

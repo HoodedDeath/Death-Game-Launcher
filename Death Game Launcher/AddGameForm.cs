@@ -170,9 +170,9 @@ namespace Death_Game_Launcher
         private Button browseButton;
         private CheckBox steamCheckBox;
         private Button removeButton;
-        private string path = "";
+        /*private string path = "";
         private string name = "";
-        private bool steamLaunch = false;
+        private bool steamLaunch = false;*/
 
         public AddGameGrouping()
         {
