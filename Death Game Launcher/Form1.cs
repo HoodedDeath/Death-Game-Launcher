@@ -403,6 +403,7 @@ namespace Death_Game_Launcher
                     this.path = form.GamePath;
                     this.isSteamLaunch = form.IsSteamLaunch;
                     this.useShortcut = form.UseShortcut;
+                    this.groupBox.Text = Truncate(form.GameName, 22);
                 }
             }
         }
