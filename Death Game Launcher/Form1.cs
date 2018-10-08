@@ -17,7 +17,8 @@ namespace Death_Game_Launcher
     public partial class Form1 : Form
     {
         public static int isExit = 0;
-        private Manifest[] games = new Manifest[0];
+        //private Manifest[] games = new Manifest[0];
+        private List<Manifest> _gamesList = new List<Manifest>();
         private LoadingForm loadingForm = new LoadingForm();
         public Form1()
         {
@@ -27,7 +28,9 @@ namespace Death_Game_Launcher
             if (MessageBox.Show(/*"Scanning may take up a significant amount of memory for the games found (approximately 1mb per game found). Low memory environments may run into issues. Would you like to continue with scan?"*/ "Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes) //Test
             {
                 thread.Start();
-                ListGames(Scan());
+                _gamesList.AddRange(Scan());
+                ListGames(_gamesList.ToArray());
+                //ListGames(Scan());
                 thread.Abort();
             }
         }
@@ -134,23 +137,29 @@ namespace Death_Game_Launcher
             }
             catch { }
             manifests.Sort((x, y) => x.name.CompareTo(y.name));
-            this.games = manifests.ToArray<Manifest>();
+            //this.games = manifests.ToArray<Manifest>();
             return manifests.ToArray<Manifest>();
         }
 
+        private readonly int[] def_location = new int[] { 3, -83 };
+        private readonly int def_location_height = -86;
         private int[] location = new int[] { 3, -83 };
+        //private int[] location = new int[] { 3, 3 };
         private void ListGames(Manifest[] m)
         {
+            //location = def_location;
+            location[1] = def_location_height;
             panel1.Controls.Clear();
             if (m == null || m.Count() == 0) return;
             panel1.AutoScrollPosition = new Point(0, 0);
             for (int i = 0; i < m.Length; i++)
             {
                 Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch);
-                if (i % 4 == 0)
-                    group.Location = new Point(location[0], location[1] += 86);
+                group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
+                /*if (i % 4 == 0)
+                    group.Location = new Point(location[0], location[1] += 86);// location[1] + (86 * (i % 4))
                 else
-                    group.Location = new Point(location[0] + (236 * (i % 4)), location[1]);
+                    group.Location = new Point(location[0] + (236 * (i % 4)), location[1]);*/
                 panel1.Controls.Add(group.Group);
                 if (i > 24 && panel1.Size.Width != 960) panel1.Size = new Size(960, panel1.Size.Height);
             }
@@ -195,7 +204,10 @@ namespace Death_Game_Launcher
                             steamLaunch = g.isSteam
                         });
                     }
-                    ListGames(manifests.ToArray());
+                    this._gamesList.AddRange(manifests.ToArray<Manifest>());
+                    this._gamesList.Sort((x, y) => x.name.CompareTo(y.name));
+                    ListGames(this._gamesList.ToArray<Manifest>());
+                    //ListGames(manifests.ToArray());
                 }
             }
         }
