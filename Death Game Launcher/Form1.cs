@@ -10,14 +10,12 @@ using System.Windows.Forms;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-//using IWshRuntimeLibrary;
 
 namespace Death_Game_Launcher
 {
     public partial class Form1 : Form
     {
         public static int isExit = 0;
-        //private Manifest[] games = new Manifest[0];
         private List<Manifest> _gamesList = new List<Manifest>();
         private LoadingForm loadingForm = new LoadingForm();
         public Form1()
@@ -32,9 +30,7 @@ namespace Death_Game_Launcher
                 ListGames(_gamesList.ToArray());
                 thread.Abort();
             }
-            //
             ListGames((_gamesList = AddConfigGames(_gamesList)).ToArray());
-            //
         }
         private void ThreaderStart()
         {
@@ -78,8 +74,6 @@ namespace Death_Game_Launcher
                                 case "shortcut":
                                     ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
                                     break;
-                                case "}":
-                                    break;
                             }
                         }
                     }
@@ -91,7 +85,6 @@ namespace Death_Game_Launcher
             {
                 MessageBox.Show("Failed to load games from saved list:\n" + e.Message);
             }
-            //
             m.Sort((x, y) => x.name.CompareTo(y.name));
             return m;
         }
@@ -244,17 +237,14 @@ namespace Death_Game_Launcher
             }
             catch { }
             manifests.Sort((x, y) => x.name.CompareTo(y.name));
-            //this.games = manifests.ToArray<Manifest>();
             return manifests.ToArray<Manifest>();
         }
 
         private readonly int[] def_location = new int[] { 3, -83 };
         private readonly int def_location_height = -86;
         private int[] location = new int[] { 3, -83 };
-        //private int[] location = new int[] { 3, 3 };
         private void ListGames(Manifest[] m)
         {
-            //location = def_location;
             location[1] = def_location_height;
             panel1.Controls.Clear();
             if (m == null || m.Count() == 0) return;
@@ -263,10 +253,6 @@ namespace Death_Game_Launcher
             {
                 Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch);
                 group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
-                /*if (i % 4 == 0)
-                    group.Location = new Point(location[0], location[1] += 86);// location[1] + (86 * (i % 4))
-                else
-                    group.Location = new Point(location[0] + (236 * (i % 4)), location[1]);*/
                 panel1.Controls.Add(group.Group);
                 if (i > 24 && panel1.Size.Width != 960) panel1.Size = new Size(960, panel1.Size.Height);
             }
@@ -315,7 +301,6 @@ namespace Death_Game_Launcher
                     this._gamesList.AddRange(manifests.ToArray<Manifest>());
                     this._gamesList.Sort((x, y) => x.name.CompareTo(y.name));
                     ListGames(this._gamesList.ToArray<Manifest>());
-                    //ListGames(manifests.ToArray());
                 }
             }
         }
@@ -329,14 +314,12 @@ namespace Death_Game_Launcher
         private PictureBox launchBox = new PictureBox();
         private string path = "";
         private string name = "";
-        //private string id = "";
         private bool isSteamLaunch = false;
         private bool useShortcut = false;
 
         public Grouping(string name, string path, bool steamLaunch)
         {
             this.path = path;
-            //this.id = path;
             this.name = name;
             this.isSteamLaunch = steamLaunch;
             int i = new Random().Next(1, 7);
@@ -344,13 +327,7 @@ namespace Death_Game_Launcher
             // 
             // iconBox
             // 
-            //this.iconBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.PlayButton1;
-            /*if (i == 1)
-                this.iconBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Logo_Inv;
-            else
-                this.iconBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Logo;*/
             this.iconBox.BackgroundImage = (/*i == 1*/ i % 2 == 0) ? global::Death_Game_Launcher.Properties.Resources.Logo_n_inv : global::Death_Game_Launcher.Properties.Resources.Logo_n;
-            //this.iconBox.BackgroundImage = Properties.Resources.Logo_n;
             this.iconBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.iconBox.Location = new System.Drawing.Point(6, 19);
             this.iconBox.Name = "iconBox";
@@ -360,20 +337,17 @@ namespace Death_Game_Launcher
             // settingsBox
             // 
             this.settingsBox.MouseClick += new MouseEventHandler(this.Settings_MouseDown);
-            //this.settingsBox.ContextMenu = cm;
             this.settingsBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Settings;
             this.settingsBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.settingsBox.Location = new System.Drawing.Point(62, 19);
             this.settingsBox.Name = "settingsBox";
             this.settingsBox.Size = new System.Drawing.Size(50, 50);
             this.settingsBox.TabStop = false;
-            //this.settingsBox.Click += new EventHandler(this.Settings_Click);
             // 
             // launchBox
             // 
             this.launchBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Play;
             this.launchBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            //this.launchBox.Image = global::Death_Game_Launcher.Properties.Resources.test;
             this.launchBox.Location = new System.Drawing.Point(118, 19);
             this.launchBox.Name = "launchBox";
             this.launchBox.Size = new System.Drawing.Size(50, 50);
@@ -412,9 +386,7 @@ namespace Death_Game_Launcher
                 }
                 else
                 {
-                    
-                    DialogResult result = MessageBox.Show("Launch with a shortcut instead of exe?", "", MessageBoxButtons.YesNoCancel);
-                    if (result == DialogResult.Yes)
+                    if (this.useShortcut)
                     {
                         IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
                         string spath = Path.Combine(Application.StartupPath, "temp.lnk");
@@ -422,7 +394,7 @@ namespace Death_Game_Launcher
                         wsh.TargetPath = this.path;
                         string[] t = path.Split('\\');
                         string tpath = "";
-                        for (int i = 0; i < t.Length-1;i++)
+                        for (int i = 0; i < t.Length - 1; i++)
                             if (i == 0)
                                 tpath += t[i];
                             else
@@ -431,16 +403,36 @@ namespace Death_Game_Launcher
                         wsh.Save();
                         System.Diagnostics.Process.Start(spath);
                     }
-                    else if (result == DialogResult.Cancel)
-                    {
-                        return;
-                    }
                     else
                     {
-                        System.Diagnostics.Process.Start(path);
+                        DialogResult result = MessageBox.Show("Launch with a shortcut instead of exe?", "", MessageBoxButtons.YesNoCancel);
+                        if (result == DialogResult.Yes)
+                        {
+                            IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
+                            string spath = Path.Combine(Application.StartupPath, "temp.lnk");
+                            IWshRuntimeLibrary.IWshShortcut wsh = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(spath);
+                            wsh.TargetPath = this.path;
+                            string[] t = path.Split('\\');
+                            string tpath = "";
+                            for (int i = 0; i < t.Length - 1; i++)
+                                if (i == 0)
+                                    tpath += t[i];
+                                else
+                                    tpath += "\\" + t[i];
+                            wsh.WorkingDirectory = tpath;
+                            wsh.Save();
+                            System.Diagnostics.Process.Start(spath);
+                        }
+                        else if (result == DialogResult.Cancel)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            System.Diagnostics.Process.Start(path);
+                        }
                     }
                 }
-                //System.Diagnostics.Process.Start("explorer.exe", path);
                 if (new Config().CloseOnLaunch)
                 {
                     Form1.isExit = 1;
@@ -511,8 +503,6 @@ namespace Death_Game_Launcher
         }
         private void Short(object sender, EventArgs e)
         {
-            /*ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path, this.isSteamLaunch);
-            shortcut.Show();*/
             using (var form = new ShortcutSettings(this.name, this.path, this.isSteamLaunch, this.useShortcut))
             {
                 DialogResult res = form.ShowDialog();
@@ -527,56 +517,6 @@ namespace Death_Game_Launcher
                 }
             }
         }
-
-        /*private void Settings_Click(object sender, EventArgs e)
-        {
-            switch (id)
-            {
-                case "":
-                    Short();
-                    break;
-                case "264710": //Subnautica
-                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "SO"), "SO.txt")))
-                    {
-                        try
-                        {
-                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "SO"), "SO.txt")));
-                            string path = sr.ReadLine();
-                            sr.Close();
-                            sr.Dispose();
-                            System.Diagnostics.Process.Start(path, "nolaunch");
-                        }
-                        catch { Short(); }
-                    }
-                    else
-                        Short();
-                    break;
-                case "105600": //Terraria
-                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")))
-                    {
-                        try
-                        {
-                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")));
-                            string path = sr.ReadLine();
-                            sr.Close();
-                            sr.Dispose();
-                            System.Diagnostics.Process.Start(path, "nolaunch");
-                        }
-                        catch { Short(); }
-                    }
-                    else
-                        Short();
-                    break;
-                default:
-                    Short();
-                    break;
-            }
-        }
-        private void Short()
-        {
-            ShortcutSettings shortcut = new ShortcutSettings(this.name, this.path);
-            shortcut.Show();
-        }*/
 
         private static string Truncate(string value, int maxChars)
         {
