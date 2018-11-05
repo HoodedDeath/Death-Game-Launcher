@@ -18,19 +18,21 @@ namespace Death_Game_Launcher
         public static int isExit = 0;
         private List<Manifest> _gamesList = new List<Manifest>();
         private LoadingForm loadingForm = new LoadingForm();
+        private readonly string gameInclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Inclusions.cfg");
+        private readonly string gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
+
         public Form1()
         {
-            MessageBox.Show(Application.StartupPath);
+            //MessageBox.Show(Application.StartupPath);
             Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 thread.Start();
                 _gamesList.AddRange(Scan());
-                ListGames(_gamesList.ToArray());
-                thread.Abort();
             }
             ListGames((_gamesList = AddConfigGames(_gamesList)).ToArray());
+            thread.Abort();
         }
         private void ThreaderStart()
         {
