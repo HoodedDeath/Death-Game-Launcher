@@ -185,9 +185,9 @@ namespace Death_Game_Launcher
                 }
                 foreach (Manifest m in _exclusionsList.ToArray())
                 {
-                    bool found = _gamesList.Remove(m);
-                    if (!found)
-                        _exclusionsList.Remove(m);
+                    /*bool found = */_gamesList.Remove(m); // Do not remove from exclusion list just because it wasn't found this time
+                    /*if (!found)
+                        _exclusionsList.Remove(m);*/
                 }
             }
             catch (Exception e)
