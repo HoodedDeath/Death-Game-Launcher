@@ -30,9 +30,6 @@
         {
             this.label1 = new System.Windows.Forms.Label();
             this.launchPathLabel = new System.Windows.Forms.Label();
-            this.nameLabel = new System.Windows.Forms.Label();
-            this.idLabel = new System.Windows.Forms.Label();
-            this.closeButton = new System.Windows.Forms.Button();
             this.steamCheckBox = new System.Windows.Forms.CheckBox();
             this.shortcutCheckBox = new System.Windows.Forms.CheckBox();
             this.nameBox = new System.Windows.Forms.TextBox();
@@ -61,36 +58,6 @@
             this.launchPathLabel.Text = "Path:";
             this.launchPathLabel.MouseLeave += new System.EventHandler(this.LaunchPathLabel_MouseLeave);
             this.launchPathLabel.MouseHover += new System.EventHandler(this.LaunchPathLabel_MouseHover);
-            // 
-            // nameLabel
-            // 
-            this.nameLabel.AutoSize = true;
-            this.nameLabel.Location = new System.Drawing.Point(445, 13);
-            this.nameLabel.Name = "nameLabel";
-            this.nameLabel.Size = new System.Drawing.Size(52, 13);
-            this.nameLabel.TabIndex = 2;
-            this.nameLabel.Text = "#NAME#";
-            // 
-            // idLabel
-            // 
-            this.idLabel.AutoSize = true;
-            this.idLabel.Location = new System.Drawing.Point(493, 167);
-            this.idLabel.Name = "idLabel";
-            this.idLabel.Size = new System.Drawing.Size(32, 13);
-            this.idLabel.TabIndex = 3;
-            this.idLabel.Text = "#ID#";
-            this.idLabel.MouseLeave += new System.EventHandler(this.LaunchPathLabel_MouseLeave);
-            this.idLabel.MouseHover += new System.EventHandler(this.LaunchPathLabel_MouseHover);
-            // 
-            // closeButton
-            // 
-            this.closeButton.Location = new System.Drawing.Point(462, 261);
-            this.closeButton.Name = "closeButton";
-            this.closeButton.Size = new System.Drawing.Size(75, 23);
-            this.closeButton.TabIndex = 4;
-            this.closeButton.Text = "Close";
-            this.closeButton.UseVisualStyleBackColor = true;
-            this.closeButton.Click += new System.EventHandler(this.closeButton_Click);
             // 
             // steamCheckBox
             // 
@@ -171,7 +138,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.CancelButton = this.cancelBtn;
-            this.ClientSize = new System.Drawing.Size(565, 327);
+            this.ClientSize = new System.Drawing.Size(297, 143);
             this.Controls.Add(this.deleteButton);
             this.Controls.Add(this.cancelBtn);
             this.Controls.Add(this.confirmBtn);
@@ -179,9 +146,6 @@
             this.Controls.Add(this.nameBox);
             this.Controls.Add(this.shortcutCheckBox);
             this.Controls.Add(this.steamCheckBox);
-            this.Controls.Add(this.closeButton);
-            this.Controls.Add(this.idLabel);
-            this.Controls.Add(this.nameLabel);
             this.Controls.Add(this.launchPathLabel);
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -202,9 +166,6 @@
 
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label launchPathLabel;
-        private System.Windows.Forms.Label nameLabel;
-        private System.Windows.Forms.Label idLabel;
-        private System.Windows.Forms.Button closeButton;
         private System.Windows.Forms.CheckBox steamCheckBox;
         private System.Windows.Forms.CheckBox shortcutCheckBox;
         private System.Windows.Forms.TextBox nameBox;

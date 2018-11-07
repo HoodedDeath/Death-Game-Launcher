@@ -24,7 +24,6 @@ namespace Death_Game_Launcher
 
         public Form1()
         {
-            //MessageBox.Show(Application.StartupPath);
             Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -32,7 +31,6 @@ namespace Death_Game_Launcher
                 thread.Start();
                 _gamesList.AddRange(Scan());
             }
-            //ListGames((_gamesList = AddConfigGames(_gamesList)).ToArray());
             ReadGameConfigs();
             ListGames(_gamesList.ToArray());
             thread.Abort();
@@ -41,61 +39,8 @@ namespace Death_Game_Launcher
         {
             _loadingForm.ShowDialog();
         }
-        /*private List<Manifest> AddConfigGames(List<Manifest> m)
-        {
-            try
-            {
-                //Path to the config file
-                string file = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Games.cfg");
-                GenSubfolders(file);
-                if (File.Exists(file))
-                {
-                    StreamReader sr = new StreamReader(File.Open(file, FileMode.Open));
-                    Manifest ma = new Manifest();
-                    for ( ; ; )
-                    {
-                        string s = sr.ReadLine();
-                        if (s == null || s == "") break;
-                        string[] arr = s.Split('"');
-                        
-                        if (arr[0].Trim() == "}")
-                        {
-                            m.Add(ma);
-                            ma = new Manifest();
-                        }
-                        else if (arr[0].Trim() != "{")
-                        {
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    ma.name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    ma.path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
-                        }
-                    }
-                    sr.Close();
-                    sr.Dispose();
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show("Failed to load games from saved list:\n" + e.Message);
-            }
-            m.Sort((x, y) => x.name.CompareTo(y.name));
-            return m;
-        }*/
         private void ReadGameConfigs()
         {
-            //Add local executable games
             try
             {
                 GenSubfolders(_gameInclusionFile);
@@ -185,9 +130,7 @@ namespace Death_Game_Launcher
                 }
                 foreach (Manifest m in _exclusionsList.ToArray())
                 {
-                    /*bool found = */_gamesList.Remove(m); // Do not remove from exclusion list just because it wasn't found this time
-                    /*if (!found)
-                        _exclusionsList.Remove(m);*/
+                    _gamesList.Remove(m);
                 }
             }
             catch (Exception e)
@@ -220,8 +163,6 @@ namespace Death_Game_Launcher
         {
             try
             {
-                //Path to the config file
-                //string file = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Games.cfg");
                 //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
                 GenSubfolders(_gameInclusionFile);
                 //Used to avoid the process of checking what games are already listed in the file by removing the file
@@ -306,14 +247,6 @@ namespace Death_Game_Launcher
             public string path;
             public bool steamLaunch;
             public bool useShortcut;
-            /*public static bool operator ==(Manifest a, Manifest b)
-            {
-                return a.name == b.name && a.path == b.path && a.steamLaunch == b.steamLaunch && a.useShortcut == b.useShortcut;
-            }
-            public static bool operator !=(Manifest a, Manifest b)
-            {
-                return a.name != b.name && a.path != b.path && a.steamLaunch != b.steamLaunch && a.useShortcut != b.useShortcut;
-            }*/
         }
         //Scans paths for games
         private Manifest[] Scan()
@@ -403,7 +336,7 @@ namespace Death_Game_Launcher
             panel1.AutoScrollPosition = new Point(0, 0);
             for (int i = 0; i < m.Length; i++)
             {
-                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, this);
+                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, m[i].useShortcut, this);
                 group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
                 panel1.Controls.Add(group.Group);
                 if (i > 24 && panel1.Size.Width != 960) panel1.Size = new Size(960, panel1.Size.Height);
@@ -447,7 +380,7 @@ namespace Death_Game_Launcher
                             name = g.name,
                             path = g.path,
                             steamLaunch = g.isSteam,
-                            useShortcut = false
+                            useShortcut = g.useShortcut
                         });
                     }
                     this._gamesList.AddRange(manifests.ToArray<Manifest>());
@@ -483,52 +416,53 @@ namespace Death_Game_Launcher
         private bool useShortcut = false;
         public Form1 parent;
 
-        public Grouping(string name, string path, bool steamLaunch, Form1 parent)
+        public Grouping(string name, string path, bool steamLaunch, bool shortcut, Form1 parent)
         {
             this.parent = parent;
             this.path = path;
             this.name = name;
             this.isSteamLaunch = steamLaunch;
+            this.useShortcut = shortcut;
             int i = new Random().Next(1, 7);
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            ComponentResourceManager resources = new ComponentResourceManager(typeof(Form1));
             // 
             // iconBox
             // 
-            this.iconBox.BackgroundImage = (/*i == 1*/ i % 2 == 0) ? global::Death_Game_Launcher.Properties.Resources.Logo_n_inv : global::Death_Game_Launcher.Properties.Resources.Logo_n;
-            this.iconBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.iconBox.Location = new System.Drawing.Point(6, 19);
+            this.iconBox.BackgroundImage = (i % 2 == 0) ? Properties.Resources.Logo_n_inv : Properties.Resources.Logo_n;
+            this.iconBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.iconBox.Location = new Point(6, 19);
             this.iconBox.Name = "iconBox";
-            this.iconBox.Size = new System.Drawing.Size(50, 50);
+            this.iconBox.Size = new Size(50, 50);
             this.iconBox.TabStop = false;
             // 
             // settingsBox
             // 
             this.settingsBox.MouseClick += new MouseEventHandler(this.Settings_MouseDown);
-            this.settingsBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Settings;
-            this.settingsBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.settingsBox.Location = new System.Drawing.Point(62, 19);
+            this.settingsBox.BackgroundImage = Properties.Resources.Settings;
+            this.settingsBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.settingsBox.Location = new Point(62, 19);
             this.settingsBox.Name = "settingsBox";
-            this.settingsBox.Size = new System.Drawing.Size(50, 50);
+            this.settingsBox.Size = new Size(50, 50);
             this.settingsBox.TabStop = false;
             // 
             // launchBox
             // 
-            this.launchBox.BackgroundImage = global::Death_Game_Launcher.Properties.Resources.Play;
-            this.launchBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.launchBox.Location = new System.Drawing.Point(118, 19);
+            this.launchBox.BackgroundImage = Properties.Resources.Play;
+            this.launchBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.launchBox.Location = new Point(118, 19);
             this.launchBox.Name = "launchBox";
-            this.launchBox.Size = new System.Drawing.Size(50, 50);
+            this.launchBox.Size = new Size(50, 50);
             this.launchBox.TabStop = false;
-            this.launchBox.Click += new System.EventHandler(this.Start_Click);
+            this.launchBox.Click += new EventHandler(this.Start_Click);
             //
             // groupBox
             // 
             this.groupBox.Controls.Add(this.iconBox);
             this.groupBox.Controls.Add(this.settingsBox);
             this.groupBox.Controls.Add(this.launchBox);
-            this.groupBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.groupBox.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
             this.groupBox.Name = "groupBox";
-            this.groupBox.Size = new System.Drawing.Size(230, 80);
+            this.groupBox.Size = new Size(230, 80);
             this.groupBox.TabStop = false;
             this.groupBox.Text = Truncate(name, 22);
 
@@ -632,11 +566,11 @@ namespace Death_Game_Launcher
                     Short(sender, e);
                     break;
                 case "264710": //Subnautica
-                    if (System.IO.File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")))
+                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")))
                     {
                         try
                         {
-                            StreamReader sr = new StreamReader(System.IO.File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")));
+                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Subnautica Options"), "Subnautica Options.txt")));
                             string path = sr.ReadLine();
                             sr.Close();
                             sr.Dispose();
@@ -648,11 +582,11 @@ namespace Death_Game_Launcher
                         Short(sender, e);
                     break;
                 case "105600": //Terraria
-                    if (System.IO.File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")))
+                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")))
                     {
                         try
                         {
-                            StreamReader sr = new StreamReader(System.IO.File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")));
+                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "Terraria Options"), "Terraria Options.txt")));
                             string path = sr.ReadLine();
                             sr.Close();
                             sr.Dispose();
@@ -684,8 +618,7 @@ namespace Death_Game_Launcher
                 }
                 else if (form.DialogResult == DialogResult.Abort)
                 {
-                    //Call Deletion methods in Form1
-                    //this.MarkedForDeletion = true;
+                    //Call Deletion method in Form1
                     this.parent.RemoveGame(this.name, this.path, this.isSteamLaunch, this.useShortcut);
                 }
             }
@@ -697,6 +630,5 @@ namespace Death_Game_Launcher
         }
 
         public GroupBox Group { get { return this.groupBox; } }
-        //public bool MarkedForDeletion { get; set; } = false;
     }
 }
