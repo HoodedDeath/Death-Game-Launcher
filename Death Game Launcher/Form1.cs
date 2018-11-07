@@ -17,9 +17,10 @@ namespace Death_Game_Launcher
     {
         public static int isExit = 0;
         private List<Manifest> _gamesList = new List<Manifest>();
-        private LoadingForm loadingForm = new LoadingForm();
-        private readonly string gameInclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Inclusions.cfg");
-        private readonly string gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
+        private List<Manifest> _exclusionsList = new List<Manifest>();
+        private LoadingForm _loadingForm = new LoadingForm();
+        private readonly string _gameInclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Inclusions.cfg");
+        private readonly string _gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
 
         public Form1()
         {
@@ -31,14 +32,16 @@ namespace Death_Game_Launcher
                 thread.Start();
                 _gamesList.AddRange(Scan());
             }
-            ListGames((_gamesList = AddConfigGames(_gamesList)).ToArray());
+            //ListGames((_gamesList = AddConfigGames(_gamesList)).ToArray());
+            ReadGameConfigs();
+            ListGames(_gamesList.ToArray());
             thread.Abort();
         }
         private void ThreaderStart()
         {
-            loadingForm.ShowDialog();
+            _loadingForm.ShowDialog();
         }
-        private List<Manifest> AddConfigGames(List<Manifest> m)
+        /*private List<Manifest> AddConfigGames(List<Manifest> m)
         {
             try
             {
@@ -89,6 +92,111 @@ namespace Death_Game_Launcher
             }
             m.Sort((x, y) => x.name.CompareTo(y.name));
             return m;
+        }*/
+        private void ReadGameConfigs()
+        {
+            //Add local executable games
+            try
+            {
+                GenSubfolders(_gameInclusionFile);
+                if (File.Exists(_gameInclusionFile))
+                {
+                    StreamReader sr = new StreamReader(File.Open(_gameInclusionFile, FileMode.Open));
+                    Manifest ma = new Manifest();
+                    for (; ; )
+                    {
+                        string s = sr.ReadLine();
+                        if (s == null || s == "") break;
+                        string[] arr = s.Split('"');
+
+                        if (arr[0].Trim() == "}")
+                        {
+                            _gamesList.Add(ma);
+                            ma = new Manifest();
+                        }
+                        else if (arr[0].Trim() != "{")
+                        {
+                            switch (arr[1].ToLower().Trim())
+                            {
+                                case "name":
+                                    ma.name = arr[arr.Length - 2];
+                                    break;
+                                case "path":
+                                    ma.path = arr[arr.Length - 2];
+                                    break;
+                                case "steam":
+                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                    break;
+                                case "shortcut":
+                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                    break;
+                            }
+                        }
+                    }
+                    sr.Close();
+                    sr.Dispose();
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Failed to load games from saved list:\n" + e.Message);
+            }
+            //
+            //Remove excluded Steam games
+            try
+            {
+                GenSubfolders(_gameExclusionFile);
+                if (File.Exists(_gameExclusionFile))
+                {
+                    StreamReader sr = new StreamReader(File.Open(_gameExclusionFile, FileMode.Open));
+                    Manifest ma = new Manifest();
+                    for (; ; )
+                    {
+                        string s = sr.ReadLine();
+                        if (s == null || s == "") break;
+                        string[] arr = s.Split('"');
+
+                        if (arr[0].Trim() == "}")
+                        {
+                            _exclusionsList.Add(ma);
+                            ma = new Manifest();
+                        }
+                        else if (arr[0].Trim() != "{")
+                        {
+                            switch (arr[1].ToLower().Trim())
+                            {
+                                case "name":
+                                    ma.name = arr[arr.Length - 2];
+                                    break;
+                                case "path":
+                                    ma.path = arr[arr.Length - 2];
+                                    break;
+                                case "steam":
+                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                    break;
+                                case "shortcut":
+                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                    break;
+                            }
+                        }
+                    }
+                    sr.Close();
+                    sr.Dispose();
+                }
+                foreach (Manifest m in _exclusionsList.ToArray())
+                {
+                    bool found = _gamesList.Remove(m);
+                    if (!found)
+                        _exclusionsList.Remove(m);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
+            }
+            //
+            //Sort the list of games to make the final listing alphabetically sorted
+            _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -105,7 +213,7 @@ namespace Death_Game_Launcher
             //MessageBox is a prompt to ask the user if they want to cancel the exit
             bool t = (e.Cancel = !(isExit == 1 || MessageBox.Show("Are you sure you want to exit?", "Exit", MessageBoxButtons.YesNo) == DialogResult.Yes));
             //Saves the local games the user added
-            if (!t) AddSavedGames();
+            if (!t) { AddSavedGames(); AddExcludedGames(); }
         }
         //Saves local launch games to config file
         private void AddSavedGames()
@@ -113,13 +221,13 @@ namespace Death_Game_Launcher
             try
             {
                 //Path to the config file
-                string file = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Games.cfg");
+                //string file = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Games.cfg");
                 //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
-                GenSubfolders(file);
+                GenSubfolders(_gameInclusionFile);
                 //Used to avoid the process of checking what games are already listed in the file by removing the file
-                if (File.Exists(file)) File.Delete(file);
+                if (File.Exists(_gameInclusionFile)) File.Delete(_gameInclusionFile);
                 //Creates file to store list of local launch games
-                StreamWriter sw = new StreamWriter(File.Open(file, FileMode.OpenOrCreate));
+                StreamWriter sw = new StreamWriter(File.Open(_gameInclusionFile, FileMode.OpenOrCreate));
                 //Loops through all games listed
                 foreach (Manifest m in this._gamesList)
                 {
@@ -143,6 +251,40 @@ namespace Death_Game_Launcher
                 MessageBox.Show("Failed to save added games:\n" + e.Message);
             }
         }
+        //Saves excluded Steam games to config file
+        private void AddExcludedGames()
+        {
+            try
+            {
+                //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
+                GenSubfolders(_gameExclusionFile);
+                //Used to avoid the process of checking what games are already listed in the file by removing the file
+                if (File.Exists(_gameExclusionFile)) File.Delete(_gameExclusionFile);
+                //Creates file to store list of excluded Steam games
+                StreamWriter sw = new StreamWriter(File.Open(_gameExclusionFile, FileMode.OpenOrCreate));
+                //Loops through all games listed
+                foreach (Manifest m in this._exclusionsList)
+                {
+                    //Only acts on the games that launch through Steam
+                    if (m.steamLaunch)
+                    {
+                        //Writes details of game in the file, self explanatory
+                        sw.WriteLine("{");
+                        sw.WriteLine("\t\"name\":\"{0}\"", m.name);
+                        sw.WriteLine("\t\"path\":\"{0}\"", m.path);
+                        sw.WriteLine("\t\"steam\":\"{0}\"", m.steamLaunch);
+                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m.useShortcut);
+                        sw.WriteLine("}");
+                    }
+                }
+                sw.Close();
+                sw.Dispose();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Failed to save excluded games:\n" + e.Message);
+            }
+        }
         //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
         private void GenSubfolders(string path)
         {
@@ -164,6 +306,14 @@ namespace Death_Game_Launcher
             public string path;
             public bool steamLaunch;
             public bool useShortcut;
+            /*public static bool operator ==(Manifest a, Manifest b)
+            {
+                return a.name == b.name && a.path == b.path && a.steamLaunch == b.steamLaunch && a.useShortcut == b.useShortcut;
+            }
+            public static bool operator !=(Manifest a, Manifest b)
+            {
+                return a.name != b.name && a.path != b.path && a.steamLaunch != b.steamLaunch && a.useShortcut != b.useShortcut;
+            }*/
         }
         //Scans paths for games
         private Manifest[] Scan()
@@ -253,7 +403,7 @@ namespace Death_Game_Launcher
             panel1.AutoScrollPosition = new Point(0, 0);
             for (int i = 0; i < m.Length; i++)
             {
-                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch);
+                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, this);
                 group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
                 panel1.Controls.Add(group.Group);
                 if (i > 24 && panel1.Size.Width != 960) panel1.Size = new Size(960, panel1.Size.Height);
@@ -306,9 +456,22 @@ namespace Death_Game_Launcher
                 }
             }
         }
+
+        //Used for Deleting games
+        public void RemoveGame(string name, string path, bool steam, bool shortcut)
+        {
+            Manifest torem = new Manifest { name = name, path = path, steamLaunch = steam, useShortcut = shortcut };
+            bool found = this._gamesList.Remove(torem);
+            if (found)
+            {
+                ListGames(this._gamesList.ToArray());
+                this._exclusionsList.Add(torem);
+            }
+            else MessageBox.Show("Error removing game. Game not found in games list.");
+        }
     }
 
-    class Grouping
+    public class Grouping
     {
         private GroupBox groupBox = new GroupBox();
         private PictureBox iconBox = new PictureBox();
@@ -318,9 +481,11 @@ namespace Death_Game_Launcher
         private string name = "";
         private bool isSteamLaunch = false;
         private bool useShortcut = false;
+        public Form1 parent;
 
-        public Grouping(string name, string path, bool steamLaunch)
+        public Grouping(string name, string path, bool steamLaunch, Form1 parent)
         {
+            this.parent = parent;
             this.path = path;
             this.name = name;
             this.isSteamLaunch = steamLaunch;
@@ -517,6 +682,12 @@ namespace Death_Game_Launcher
                     this.useShortcut = form.UseShortcut;
                     this.groupBox.Text = Truncate(form.GameName, 22);
                 }
+                else if (form.DialogResult == DialogResult.Abort)
+                {
+                    //Call Deletion methods in Form1
+                    //this.MarkedForDeletion = true;
+                    this.parent.RemoveGame(this.name, this.path, this.isSteamLaunch, this.useShortcut);
+                }
             }
         }
 
@@ -526,5 +697,6 @@ namespace Death_Game_Launcher
         }
 
         public GroupBox Group { get { return this.groupBox; } }
+        //public bool MarkedForDeletion { get; set; } = false;
     }
 }

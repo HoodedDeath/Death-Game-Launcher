@@ -28,9 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            //Line used only for Dialog Confirmation
-            this.DialogResult = System.Windows.Forms.DialogResult.None;
-            //
             this.label1 = new System.Windows.Forms.Label();
             this.launchPathLabel = new System.Windows.Forms.Label();
             this.nameLabel = new System.Windows.Forms.Label();
@@ -42,6 +39,7 @@
             this.pathBox = new System.Windows.Forms.TextBox();
             this.confirmBtn = new System.Windows.Forms.Button();
             this.cancelBtn = new System.Windows.Forms.Button();
+            this.deleteButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label1
@@ -125,19 +123,19 @@
             // 
             this.nameBox.Location = new System.Drawing.Point(60, 10);
             this.nameBox.Name = "nameBox";
-            this.nameBox.Size = new System.Drawing.Size(108, 20);
+            this.nameBox.Size = new System.Drawing.Size(220, 20);
             this.nameBox.TabIndex = 7;
             // 
             // pathBox
             // 
             this.pathBox.Location = new System.Drawing.Point(51, 36);
             this.pathBox.Name = "pathBox";
-            this.pathBox.Size = new System.Drawing.Size(117, 20);
+            this.pathBox.Size = new System.Drawing.Size(229, 20);
             this.pathBox.TabIndex = 8;
             // 
             // confirmBtn
             // 
-            this.confirmBtn.Location = new System.Drawing.Point(93, 108);
+            this.confirmBtn.Location = new System.Drawing.Point(205, 108);
             this.confirmBtn.Name = "confirmBtn";
             this.confirmBtn.Size = new System.Drawing.Size(75, 23);
             this.confirmBtn.TabIndex = 9;
@@ -148,13 +146,23 @@
             // cancelBtn
             // 
             this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.Location = new System.Drawing.Point(12, 108);
+            this.cancelBtn.Location = new System.Drawing.Point(124, 108);
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(75, 23);
             this.cancelBtn.TabIndex = 10;
             this.cancelBtn.Text = "Cancel";
             this.cancelBtn.UseVisualStyleBackColor = true;
             this.cancelBtn.Click += new System.EventHandler(this.Cancel_Click);
+            // 
+            // deleteButton
+            // 
+            this.deleteButton.Location = new System.Drawing.Point(12, 108);
+            this.deleteButton.Name = "deleteButton";
+            this.deleteButton.Size = new System.Drawing.Size(75, 23);
+            this.deleteButton.TabIndex = 11;
+            this.deleteButton.Text = "Delete";
+            this.deleteButton.UseVisualStyleBackColor = true;
+            this.deleteButton.Click += new System.EventHandler(this.Delete_Click);
             // 
             // ShortcutSettings
             // 
@@ -164,6 +172,7 @@
             this.AutoSize = true;
             this.CancelButton = this.cancelBtn;
             this.ClientSize = new System.Drawing.Size(565, 327);
+            this.Controls.Add(this.deleteButton);
             this.Controls.Add(this.cancelBtn);
             this.Controls.Add(this.confirmBtn);
             this.Controls.Add(this.pathBox);
@@ -202,5 +211,6 @@
         private System.Windows.Forms.TextBox pathBox;
         private System.Windows.Forms.Button confirmBtn;
         private System.Windows.Forms.Button cancelBtn;
+        private System.Windows.Forms.Button deleteButton;
     }
 }

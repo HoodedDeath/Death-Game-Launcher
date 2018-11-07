@@ -89,6 +89,14 @@ namespace Death_Game_Launcher
                 this.steamCheckBox.Checked = this.Steam;
         }*/
 
+        private void Delete_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to remove this game from the listing?", "Remove Game", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                DialogResult = DialogResult.Abort;
+                Close();
+            }
+        }
         private void Cancel_Click(object sender, EventArgs e)
         {
             Close();
@@ -102,6 +110,8 @@ namespace Death_Game_Launcher
         {
             if (DialogResult == DialogResult.OK)
                 e.Cancel = false;
+            else if (DialogResult == DialogResult.Abort)
+                e.Cancel = false;
             else
                 e.Cancel = MessageBox.Show("Any changes will be lost if you exit without confirming.", "Discard Changes", MessageBoxButtons.YesNo) == DialogResult.No;
         }
@@ -110,6 +120,5 @@ namespace Death_Game_Launcher
         public bool UseShortcut { get { return this.shortcutCheckBox.Checked; } set { this.shortcutCheckBox.Checked = value; } }
         public string GameName { get { return this.nameBox.Text; } set { this.nameBox.Text = value; } }
         public string GamePath { get { return this.pathBox.Text; } set { this.pathBox.Text = value; } }
-
     }
 }
