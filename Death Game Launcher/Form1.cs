@@ -18,9 +18,11 @@ namespace Death_Game_Launcher
         public static int isExit = 0;
         private List<Manifest> _gamesList = new List<Manifest>();
         private List<Manifest> _exclusionsList = new List<Manifest>();
+        private List<Manifest[]> _gameMods = new List<Manifest[]>();
         private LoadingForm _loadingForm = new LoadingForm();
         private readonly string _gameInclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Inclusions.cfg");
         private readonly string _gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
+        private readonly string _gameModsFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Mods.cfg");
 
         public Form1()
         {
@@ -138,6 +140,62 @@ namespace Death_Game_Launcher
                 MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
             }
             //
+            _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
+            //Modify any games based on the Modifications file
+            try
+            {
+                StreamReader sr = new StreamReader(File.Open(_gameModsFile, FileMode.Open));
+                Manifest[] m = new Manifest[] { new Manifest(), new Manifest() };
+                int i = 0;
+                for (; ; )
+                {
+                    string s = sr.ReadLine();
+                    if (s == null || s == "") break;
+                    string[] arr = s.Split('"');
+                    if (arr[0] == "}")
+                    {
+                        this._gameMods.Add(m);
+                        m = new Manifest[] { new Manifest(), new Manifest() };
+                        i = 0;
+                    }
+                    else if (arr[0] == ";")
+                    {
+                        i++;
+                    }
+                    else if (arr[0] != "{")
+                    {
+                        switch (arr[1].ToLower().Trim())
+                        {
+                            case "name":
+                                m[i].name = arr[arr.Length - 2];
+                                break;
+                            case "path":
+                                m[i].path = arr[arr.Length - 2];
+                                break;
+                            case "steam":
+                                m[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                break;
+                            case "shortcut":
+                                m[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                break;
+                        }
+                    }
+                }
+                sr.Close();
+                sr.Dispose();
+                foreach (Manifest[] ma in this._gameMods.ToArray())
+                {
+                    bool found = this._gamesList.Remove(ma[0]);
+                    if (found)
+                    {
+                        //this._gamesList.Remove(ma[0]);
+                        this._gamesList.Add(ma[1]);
+                        MessageBox.Show("Old: "+ ma[0].ToString()+"\nNew: "+ ma[1].ToString());
+                    }
+                }
+            }
+            catch (Exception e) { MessageBox.Show("Failed to load modification list:\n" + e.Message); }
+            //
             //Sort the list of games to make the final listing alphabetically sorted
             _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
         }
@@ -156,7 +214,7 @@ namespace Death_Game_Launcher
             //MessageBox is a prompt to ask the user if they want to cancel the exit
             bool t = (e.Cancel = !(isExit == 1 || MessageBox.Show("Are you sure you want to exit?", "Exit", MessageBoxButtons.YesNo) == DialogResult.Yes));
             //Saves the local games the user added
-            if (!t) { AddSavedGames(); AddExcludedGames(); }
+            if (!t) { AddSavedGames(); AddExcludedGames(); AddGameModifications(); }
         }
         //Saves local launch games to config file
         private void AddSavedGames()
@@ -226,6 +284,36 @@ namespace Death_Game_Launcher
                 MessageBox.Show("Failed to save excluded games:\n" + e.Message);
             }
         }
+        //Saves changes made to listings
+        private void AddGameModifications()
+        {
+            try
+            {
+                GenSubfolders(_gameModsFile);
+                if (File.Exists(_gameModsFile)) File.Delete(_gameModsFile);
+                StreamWriter sw = new StreamWriter(File.Open(_gameModsFile, FileMode.OpenOrCreate));
+                foreach (Manifest[] m in _gameMods)
+                {
+                    if (m[0].steamLaunch || m[1].steamLaunch)
+                    {
+                        sw.WriteLine("{");
+                        sw.WriteLine("\t\"name\":\"{0}\"", m[0].name);
+                        sw.WriteLine("\t\"path\":\"{0}\"", m[0].path);
+                        sw.WriteLine("\t\"steam\":\"{0}\"", m[0].steamLaunch);
+                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m[0].useShortcut);
+                        sw.WriteLine(";");
+                        sw.WriteLine("\t\"name\":\"{0}\"", m[1].name);
+                        sw.WriteLine("\t\"path\":\"{0}\"", m[1].path);
+                        sw.WriteLine("\t\"steam\":\"{0}\"", m[1].steamLaunch);
+                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m[1].useShortcut);
+                        sw.WriteLine("}");
+                    }
+                }
+                sw.Close();
+                sw.Dispose();
+            }
+            catch (Exception e) { MessageBox.Show("Failed to save edits to games in listing:\n" + e.Message); }
+        }
         //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
         private void GenSubfolders(string path)
         {
@@ -241,12 +329,16 @@ namespace Death_Game_Launcher
         }
 
         //App Manifest Data
-        private struct Manifest
+        public struct Manifest
         {
             public string name;
             public string path;
             public bool steamLaunch;
             public bool useShortcut;
+            public override string ToString()
+            {
+                return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
+            }
         }
         //Scans paths for games
         private Manifest[] Scan()
@@ -401,6 +493,23 @@ namespace Death_Game_Launcher
                 this._exclusionsList.Add(torem);
             }
             else MessageBox.Show("Error removing game. Game not found in games list.");
+        }
+
+        public void UpdateGame(Manifest oldMan, Manifest newMan)
+        {
+            bool rem = this._gamesList.Remove(oldMan);
+            if (rem)
+            {
+                this._gamesList.Add(newMan);
+                this._gameMods.Add(new Manifest[] { oldMan, newMan });
+                MessageBox.Show("Game updated.");
+            }
+            else
+            {
+                MessageBox.Show("Update failed.");
+            }
+            this._gamesList.Sort((x, y) => x.name.CompareTo(y.name));
+            ListGames(this._gamesList.ToArray());
         }
     }
 
@@ -610,11 +719,28 @@ namespace Death_Game_Launcher
                 MessageBox.Show(form.DialogResult.ToString());
                 if (form.DialogResult == DialogResult.OK)
                 {
-                    this.name = form.GameName;
+                    Form1.Manifest oldMan = new Form1.Manifest
+                    {
+                        name = this.name,
+                        path = this.path,
+                        steamLaunch = this.isSteamLaunch,
+                        useShortcut = this.useShortcut
+                    };
+                    Form1.Manifest newMan = new Form1.Manifest
+                    {
+                        name = (this.name = form.GameName),
+                        path = (this.path = form.GamePath),
+                        steamLaunch = (this.isSteamLaunch = form.IsSteamLaunch),
+                        useShortcut = (this.useShortcut = form.UseShortcut)
+                    };
+                    this.groupBox.Text = Truncate(form.GameName, 22);
+                    this.parent.UpdateGame(oldMan, newMan);
+                    //
+                    /*this.name = form.GameName;
                     this.path = form.GamePath;
                     this.isSteamLaunch = form.IsSteamLaunch;
                     this.useShortcut = form.UseShortcut;
-                    this.groupBox.Text = Truncate(form.GameName, 22);
+                    this.groupBox.Text = Truncate(form.GameName, 22);*/
                 }
                 else if (form.DialogResult == DialogResult.Abort)
                 {
