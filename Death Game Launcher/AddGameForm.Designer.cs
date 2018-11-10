@@ -40,11 +40,13 @@
             this.cancelButton = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.addButton = new System.Windows.Forms.Button();
+            this.shortcutCheckBox = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.shortcutCheckBox);
             this.groupBox1.Controls.Add(this.removeButton);
             this.groupBox1.Controls.Add(this.browseButton);
             this.groupBox1.Controls.Add(this.steamCheckBox);
@@ -54,13 +56,13 @@
             this.groupBox1.Controls.Add(this.nameLabel);
             this.groupBox1.Location = new System.Drawing.Point(548, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(240, 130);
+            this.groupBox1.Size = new System.Drawing.Size(240, 154);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             // 
             // removeButton
             // 
-            this.removeButton.Location = new System.Drawing.Point(162, 102);
+            this.removeButton.Location = new System.Drawing.Point(162, 119);
             this.removeButton.Name = "removeButton";
             this.removeButton.Size = new System.Drawing.Size(75, 23);
             this.removeButton.TabIndex = 3;
@@ -123,7 +125,7 @@
             // 
             // okButton
             // 
-            this.okButton.Location = new System.Drawing.Point(183, 423);
+            this.okButton.Location = new System.Drawing.Point(680, 354);
             this.okButton.Name = "okButton";
             this.okButton.Size = new System.Drawing.Size(75, 23);
             this.okButton.TabIndex = 1;
@@ -134,7 +136,7 @@
             // cancelButton
             // 
             this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.Location = new System.Drawing.Point(102, 423);
+            this.cancelButton.Location = new System.Drawing.Point(599, 354);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(75, 23);
             this.cancelButton.TabIndex = 2;
@@ -147,18 +149,29 @@
             this.panel1.AutoScroll = true;
             this.panel1.Location = new System.Drawing.Point(12, 12);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(246, 405);
+            this.panel1.Size = new System.Drawing.Size(246, 408);
             this.panel1.TabIndex = 3;
             // 
             // addButton
             // 
-            this.addButton.Location = new System.Drawing.Point(12, 424);
+            this.addButton.Location = new System.Drawing.Point(509, 355);
             this.addButton.Name = "addButton";
             this.addButton.Size = new System.Drawing.Size(75, 23);
             this.addButton.TabIndex = 4;
             this.addButton.Text = "Add Game";
             this.addButton.UseVisualStyleBackColor = true;
             this.addButton.Click += new System.EventHandler(this.AddGame_Click);
+            // 
+            // shortcutCheckBox
+            // 
+            this.shortcutCheckBox.AutoSize = true;
+            this.shortcutCheckBox.Location = new System.Drawing.Point(7, 125);
+            this.shortcutCheckBox.Name = "shortcutCheckBox";
+            this.shortcutCheckBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.shortcutCheckBox.Size = new System.Drawing.Size(127, 17);
+            this.shortcutCheckBox.TabIndex = 5;
+            this.shortcutCheckBox.Text = "Use Shortcut Launch";
+            this.shortcutCheckBox.UseVisualStyleBackColor = true;
             // 
             // AddGameForm
             // 
@@ -167,7 +180,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(800, 459);
+            this.ClientSize = new System.Drawing.Size(800, 704);
             this.ControlBox = false;
             this.Controls.Add(this.addButton);
             this.Controls.Add(this.groupBox1);
@@ -205,5 +218,6 @@
         private System.Windows.Forms.Button removeButton;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button addButton;
+        private System.Windows.Forms.CheckBox shortcutCheckBox;
     }
 }

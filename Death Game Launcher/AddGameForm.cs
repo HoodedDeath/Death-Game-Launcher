@@ -12,7 +12,6 @@ namespace Death_Game_Launcher
 {
     public partial class AddGameForm : Form
     {
-        //public List<Game> games = new List<Game>();
         private List<string> groupBoxes = new List<string>();
         public List<Game> Games { get; set; } = new List<Game>();
         public struct Game
@@ -20,11 +19,11 @@ namespace Death_Game_Launcher
             public string name;
             public string path;
             public bool isSteam;
+            public bool useShortcut;
         }
         public AddGameForm()
         {
             InitializeComponent();
-            //this.Games = new List<Game>();
             this.AllowDrop = true;
             this.DragEnter += new DragEventHandler(GameDrag);
             this.DragDrop += new DragEventHandler(GameDrop);
@@ -37,7 +36,7 @@ namespace Death_Game_Launcher
         private void GameDrop(object sender, DragEventArgs e)
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            foreach (string file in files) AddGame(file); // MessageBox.Show(file); // Console.WriteLine(file);
+            foreach (string file in files) AddGame(file);
         }
 
         private void AddGame(string path)
@@ -47,15 +46,12 @@ namespace Death_Game_Launcher
         private void AddGroup()
         {
             panel1.AutoScrollPosition = new Point(0, 0);
-            /*AddGameGrouping g = new AddGameGrouping();
-            g.Location = new Point(location[0], location[1] += 136);*/
             AddGameGrouping g = new AddGameGrouping
             {
                 Location = new Point(location[0], location[1] += 136),
                 BoxName = "groupBox" + this.count++
             };
             panel1.Controls.Add(g.Group);
-            //count++;
             groupBoxes.Add(g.BoxName);
             MessageBox.Show(g.BoxName);
             if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
@@ -68,13 +64,6 @@ namespace Death_Game_Launcher
             string path = d.FileName;
             pathTextBox.Text = path;
             MessageBox.Show(path);
-            /*if (nameTextBox.Text == null || nameTextBox.Text == "")
-            {
-                string[] splitpath = path.Split('\\');
-                string name = splitpath[splitpath.Length - 1].Split('.')[0];
-                nameTextBox.Text = name;
-                MessageBox.Show(name);
-            }*/
             if (nameTextBox.Text == null || nameTextBox.Text == "")
                 nameTextBox.Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
         }
@@ -90,18 +79,12 @@ namespace Death_Game_Launcher
         {
             foreach (GroupBox g in panel1.Controls)
             {
-                //CheckBox check = g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox;
-                /*games.Add(new Game()
-                {
-                    name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
-                    path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
-                    isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
-                });*/
                 this.Games.Add(new Game()
                 {
                     name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
                     path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
-                    isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked
+                    isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked,
+                    useShortcut = (g.Controls.Find("shortcutCheckBox", true).FirstOrDefault() as CheckBox).Checked && (g.Controls.Find("shortcutCheckBox", true).FirstOrDefault() as CheckBox).Enabled
                 });
             }
             this.DialogResult = DialogResult.OK;
@@ -170,9 +153,7 @@ namespace Death_Game_Launcher
         private Button browseButton;
         private CheckBox steamCheckBox;
         private Button removeButton;
-        private string path = "";
-        private string name = "";
-        private bool steamLaunch = false;
+        private CheckBox shortcutCheckBox;
 
         public AddGameGrouping()
         {
@@ -184,6 +165,7 @@ namespace Death_Game_Launcher
             this.nameTextBox = new TextBox();
             this.nameLabel = new Label();
             this.removeButton = new Button();
+            this.shortcutCheckBox = new CheckBox();
             this.groupBox1.SuspendLayout();
             // 
             // groupBox1
@@ -195,9 +177,9 @@ namespace Death_Game_Launcher
             this.groupBox1.Controls.Add(this.pathLabel);
             this.groupBox1.Controls.Add(this.nameTextBox);
             this.groupBox1.Controls.Add(this.nameLabel);
-            //this.groupBox1.Location = new Point(548, 12);
+            this.groupBox1.Controls.Add(this.shortcutCheckBox);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new Size(240, 130);
+            this.groupBox1.Size = new Size(240, 154);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             // 
@@ -221,6 +203,7 @@ namespace Death_Game_Launcher
             this.steamCheckBox.TabIndex = 4;
             this.steamCheckBox.Text = "Steam Launch";
             this.steamCheckBox.UseVisualStyleBackColor = true;
+            this.steamCheckBox.CheckedChanged += new EventHandler(this.SteamChecked_Changed);
             // 
             // pathTextBox
             // 
@@ -263,6 +246,17 @@ namespace Death_Game_Launcher
             this.removeButton.Text = "Remove";
             this.removeButton.UseVisualStyleBackColor = true;
             this.removeButton.Click += new EventHandler(this.Remove_Click);
+            // 
+            // shortcutCheckBox
+            // 
+            this.shortcutCheckBox.AutoSize = true;
+            this.shortcutCheckBox.Location = new Point(7, 125);
+            this.shortcutCheckBox.Name = "shortcutCheckBox";
+            this.shortcutCheckBox.RightToLeft = RightToLeft.Yes;
+            this.shortcutCheckBox.Size = new Size(127, 17);
+            this.shortcutCheckBox.TabIndex = 5;
+            this.shortcutCheckBox.Text = "Use Shortcut Launch";
+            this.shortcutCheckBox.UseVisualStyleBackColor = true;
 
             this.groupBox1.ResumeLayout();
         }
@@ -275,6 +269,7 @@ namespace Death_Game_Launcher
         public string Path { get { return this.pathTextBox.Text; } }
         public string Name { get { return this.nameTextBox.Text; } }
         public bool IsSteamLaunch { get { return this.steamCheckBox.Checked; } }
+        public bool UseShortcut { get { return this.shortcutCheckBox.Checked && this.shortcutCheckBox.Enabled; } }
         public string BoxName
         {
             get { return this.groupBox1.Name; }
@@ -296,5 +291,9 @@ namespace Death_Game_Launcher
                 nameTextBox.Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
         }
 
+        private void SteamChecked_Changed(object sender, EventArgs e)
+        {
+            this.shortcutCheckBox.Enabled = !(this.steamCheckBox.Checked);
+        }
     }
 }
