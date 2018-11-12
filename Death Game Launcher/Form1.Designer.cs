@@ -37,6 +37,7 @@
             this.scanButton = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.closeCheckBox = new System.Windows.Forms.CheckBox();
+            this.exclusionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -44,7 +45,8 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.addGameToolStripMenuItem});
+            this.addGameToolStripMenuItem,
+            this.exclusionsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(996, 24);
@@ -119,6 +121,13 @@
             this.closeCheckBox.UseVisualStyleBackColor = true;
             this.closeCheckBox.CheckedChanged += new System.EventHandler(this.closeCheckBox_CheckedChanged);
             // 
+            // exclusionsToolStripMenuItem
+            // 
+            this.exclusionsToolStripMenuItem.Name = "exclusionsToolStripMenuItem";
+            this.exclusionsToolStripMenuItem.Size = new System.Drawing.Size(73, 20);
+            this.exclusionsToolStripMenuItem.Text = "Exclusions";
+            this.exclusionsToolStripMenuItem.Click += new System.EventHandler(this.exclusionsToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -153,6 +162,7 @@
         public System.Windows.Forms.CheckBox closeCheckBox;
         private System.Windows.Forms.ToolStripMenuItem restartToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem addGameToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exclusionsToolStripMenuItem;
     }
 }
 

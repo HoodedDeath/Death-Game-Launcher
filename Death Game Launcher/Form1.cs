@@ -17,6 +17,8 @@ namespace Death_Game_Launcher
     {
         //Used for Close On Launch option
         public static int isExit = 0;
+        //Were Steam games scanned for at start
+        private bool _scannedSteam = false;
         //List of games to be displayed
         private List<Manifest> _gamesList = new List<Manifest>();
         //List of games to be removed from _gamesList
@@ -38,6 +40,7 @@ namespace Death_Game_Launcher
             InitializeComponent();
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
+                this._scannedSteam = true;
                 thread.Start();
                 _gamesList.AddRange(Scan());
             }
@@ -651,6 +654,37 @@ namespace Death_Game_Launcher
             this._gamesList.Sort((x, y) => x.name.CompareTo(y.name));
             //Re-lists games
             ListGames(this._gamesList.ToArray());
+        }
+
+        private void exclusionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (this._exclusionsList.Count > 0)
+            {
+                AddExcludedGames();
+                using (var form = new ExclusionsForm())
+                {
+                    DialogResult res = form.ShowDialog();
+                    MessageBox.Show(res.ToString());
+                    if (res == DialogResult.OK)
+                    {
+                        this._exclusionsList = new List<Manifest>();
+                        this._gamesList = new List<Manifest>();
+                        Thread thread = new Thread(new ThreadStart(ThreaderStart));
+                        if (_scannedSteam)
+                        {
+                            thread.Start();
+                            this._gamesList.AddRange(Scan());
+                        }
+                        ReadGameConfigs();
+                        ListGames(this._gamesList.ToArray());
+                        thread.Abort();
+                    }
+                }
+            }
+            else
+                MessageBox.Show("There are no excluded games. Use the settings button on a game in the listing to exclude that game.");
+            
+            
         }
     }
 

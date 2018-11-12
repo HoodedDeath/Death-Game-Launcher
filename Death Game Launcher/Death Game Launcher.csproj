@@ -81,6 +81,12 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Config.settings</DependentUpon>
     </Compile>
+    <Compile Include="ExclusionsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExclusionsForm.Designer.cs">
+      <DependentUpon>ExclusionsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -109,6 +115,9 @@
     </Compile>
     <EmbeddedResource Include="AddGameForm.resx">
       <DependentUpon>AddGameForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExclusionsForm.resx">
+      <DependentUpon>ExclusionsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
