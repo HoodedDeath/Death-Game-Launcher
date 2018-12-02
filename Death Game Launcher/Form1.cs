@@ -357,6 +357,9 @@ namespace Death_Game_Launcher
         //Saves changes made to listings
         private void AddGameModifications()
         {
+            //Used to eliminate chains of changes to a single game
+            //Example: 'a' -> 'ab', 'ab' -> 'ba'; results in 'a' -> 'ba'
+            this._gameMods = ElimChains(this._gameMods);
             try
             {
                 //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
@@ -391,6 +394,45 @@ namespace Death_Game_Launcher
             }
             catch (Exception e) { MessageBox.Show("Failed to save edits to games in listing:\n" + e.Message); }
         }
+        //Eliminates chains of changes to a single game
+        //Example: 'a' -> 'ab', 'ab' -> 'ba'; results in 'a' -> 'ba'
+        private List<Manifest[]> ElimChains(List<Manifest[]> l)
+        {
+            //Easier (in my experience) to deal with arrays vs. lists
+            Manifest[][] m = l.ToArray();
+            //The List of values to be returned
+            List<Manifest[]> r = new List<Manifest[]>();
+            //Bool to track if there were any chains found and fixed
+            //Used to end recursive element
+            bool b = false;
+            //Loops through each change that was given in the input
+            for (int i = 0; i < m.Length; i++)
+            {
+                //If it's the first change, just add it to the return list
+                if (i == 0)
+                    r.Add(m[i]);
+                else
+                {
+                    //If the 'old' details of the current change are the same as the 'new' details of the previous change, this is a link in a chain and needs to be fixed
+                    if (m[i][0] == m[i - 1][1])
+                    {
+                        //A chain has been found
+                        b = true;
+                        //Remove the previous change from the return list to prevent duplicates
+                        r.Remove(r.Last());
+                        //Add the 'old' details of the previous change and the 'new' details of the current change to the return list, eliminating the link between the two and merging them into a single change
+                        r.Add(new Manifest[] { m[i - 1][0], m[i][1] });
+                    }
+                    else //If there's no link found, just add the current change to the return list
+                        r.Add(m[i]);
+                }
+            }
+            //If there were any links found, recursively run the method again to check for any remaining chains, though this may be unnecessary, otherwise just return the list that won't contain direct chains
+            if (b)
+                return ElimChains(r);
+            else
+                return r;
+        }
         //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
         private void GenSubfolders(string path)
         {
@@ -416,6 +458,15 @@ namespace Death_Game_Launcher
             public override string ToString()
             {
                 return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
+            }
+            //
+            public static bool operator ==(Manifest a, Manifest b)
+            {
+                return a.name == b.name && a.path == b.path && a.steamLaunch == b.steamLaunch && a.useShortcut == b.useShortcut;
+            }
+            public static bool operator !=(Manifest a, Manifest b)
+            {
+                return a.name != b.name || a.path != b.path || a.steamLaunch != b.steamLaunch || a.useShortcut != b.useShortcut;
             }
         }
         //Scans paths for games
@@ -642,7 +693,21 @@ namespace Death_Game_Launcher
                 //Add the updated information to the games list
                 this._gamesList.Add(newMan);
                 //Add the old and new information to the list of game changes
-                this._gameMods.Add(new Manifest[] { oldMan, newMan });
+                //this._gameMods.Add(new Manifest[] { oldMan, newMan });
+
+                //Compare any changes to the Steam launch setting for the game
+                if (oldMan.steamLaunch && !newMan.steamLaunch)
+                {
+                    //Was a Steam launch but is now a local launch
+                    //Exclude game from Steam game scanning
+                    this._exclusionsList.Add(oldMan);
+                    //Add to the game list. Game will be seen as a local launch and saved to the inclusions file upon closing
+                    //this._gamesList.Add(newMan);
+                }
+                else if (oldMan.steamLaunch && newMan.steamLaunch)
+                {
+                    this._gameMods.Add(new Manifest[] { oldMan, newMan });
+                }
             }
             //If the game was not found
             //Should never run this, since all listed games should always be in games list
@@ -656,35 +721,93 @@ namespace Death_Game_Launcher
             ListGames(this._gamesList.ToArray());
         }
 
+        //Called by clicking the 'Exclusions' button on the tool strip
         private void exclusionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            //Are there any games that have been excluded?
+            //If so, show the form
             if (this._exclusionsList.Count > 0)
             {
+                //Saves the list of excluded games
                 AddExcludedGames();
+                //Using the form that will display all the excluded games
                 using (var form = new ExclusionsForm())
                 {
+                    //Shows the Form
                     DialogResult res = form.ShowDialog();
+                    //Debugging, to be removed
                     MessageBox.Show(res.ToString());
+                    //If the Form exited by the user clicking 'Confirm'
                     if (res == DialogResult.OK)
                     {
+                        //Clears the list of excluded games so it can be read again without creating duplicates
                         this._exclusionsList = new List<Manifest>();
+                        //Clears the list of games to prevent duplicates
                         this._gamesList = new List<Manifest>();
+                        //Thread to display loading animation incase of Steam game scanning
                         Thread thread = new Thread(new ThreadStart(ThreaderStart));
-                        if (_scannedSteam)
+                        //Did we scan for Steam games when initially launching? If so, scan them again now
+                        if (this._scannedSteam)
                         {
+                            //Displays loading animation while loading
                             thread.Start();
+                            //Scans for Steam games
                             this._gamesList.AddRange(Scan());
                         }
+                        //Reads through the inclusions, exclusions, and changes files 
                         ReadGameConfigs();
+                        //Lists the games
                         ListGames(this._gamesList.ToArray());
+                        //Aborts the loading animation thread. If it was never started, this line won't effect anything
                         thread.Abort();
                     }
                 }
             }
-            else
+            else //If there were no games excluded, there's no need to show the form, let the user know
                 MessageBox.Show("There are no excluded games. Use the settings button on a game in the listing to exclude that game.");
             
             
+        }
+
+        //Called by clicking 'Changes' button on tool strip
+        private void changesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //Saves the current list of changes to games
+            AddGameModifications();
+            //Using the Form that will list all the changes saved
+            using (ModificationsForm form = new ModificationsForm())
+            {
+                //Shows the form
+                DialogResult res = form.ShowDialog();
+                //Debugging, to be removed
+                MessageBox.Show(res.ToString());
+                //If the Form exited by the user pressing 'Confirm'
+                if (res == DialogResult.OK)
+                {
+                    //Clears the list of games loaded to prevent duplicating games when listing
+                    this._gamesList = new List<Manifest>();
+                    //Gets the final list of changes from the modification Form
+                    this._gameMods = form.Modifs;
+                    //Saves the list of changes
+                    AddGameModifications();
+                    //Thread to display loading animation incase of Steam game scanning
+                    Thread thread = new Thread(new ThreadStart(ThreaderStart));
+                    //Did we scan for Steam games when initially launching? If so, scan them again now
+                    if (this._scannedSteam)
+                    {
+                        //Displays loading animation while loading
+                        thread.Start();
+                        //Scans for Steam games
+                        this._gamesList.AddRange(Scan());
+                    }
+                    //Reads through the inclusions, exclusions, and changes files 
+                    ReadGameConfigs();
+                    //Lists the games
+                    ListGames(this._gamesList.ToArray());
+                    //Aborts the loading animation thread. If it was never started, this line won't effect anything
+                    thread.Abort();
+                }
+            }
         }
     }
 
