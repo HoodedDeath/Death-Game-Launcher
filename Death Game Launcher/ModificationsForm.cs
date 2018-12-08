@@ -265,7 +265,7 @@ namespace Death_Game_Launcher
         private CheckBox steamLaunchOldBox, steamLaunchNewBox, shortcutLaunchOldBox, shortcutLaunchNewBox;
         private Button browseBtn, removeBtn;
         //The Form containing this object. Used for calling ModificationsForm.Remove
-        private ModificationsForm _parent;
+        private readonly ModificationsForm _parent;
 
         public ModifGroup(Manifest oldMan, Manifest newMan, ModificationsForm parent)
         {
@@ -358,6 +358,8 @@ namespace Death_Game_Launcher
             this.label3.Size = new Size(48, 13);
             this.label3.TabIndex = 2;
             this.label3.Text = "Path/ID:";
+            this.label3.MouseHover += new EventHandler(this.Path_MouseHover);
+            this.label3.MouseLeave += new EventHandler(this.Path_MouseLeave);
             // 
             // idOldBox
             // 
@@ -378,6 +380,8 @@ namespace Death_Game_Launcher
             this.label4.Size = new Size(76, 13);
             this.label4.TabIndex = 4;
             this.label4.Text = "Steam Launch";
+            this.label4.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.label4.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
             // 
             // steamLaunchOldBox
             // 
@@ -391,6 +395,8 @@ namespace Death_Game_Launcher
             this.steamLaunchOldBox.TabIndex = 5;
             this.steamLaunchOldBox.TabStop = false;
             this.steamLaunchOldBox.UseVisualStyleBackColor = true;
+            this.steamLaunchOldBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.steamLaunchOldBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
             // 
             // label5
             // 
@@ -400,6 +406,8 @@ namespace Death_Game_Launcher
             this.label5.Size = new Size(86, 13);
             this.label5.TabIndex = 6;
             this.label5.Text = "Shortcut Launch";
+            this.label5.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.label5.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
             // 
             // shortcutLaunchOldBox
             // 
@@ -413,6 +421,8 @@ namespace Death_Game_Launcher
             this.shortcutLaunchOldBox.TabIndex = 7;
             this.shortcutLaunchOldBox.TabStop = false;
             this.shortcutLaunchOldBox.UseVisualStyleBackColor = true;
+            this.shortcutLaunchOldBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.shortcutLaunchOldBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
             // 
             // label6
             // 
@@ -450,6 +460,8 @@ namespace Death_Game_Launcher
             this.label8.Size = new Size(48, 13);
             this.label8.TabIndex = 11;
             this.label8.Text = "Path/ID:";
+            this.label8.MouseHover += new EventHandler(this.Path_MouseHover);
+            this.label8.MouseLeave += new EventHandler(this.Path_MouseLeave);
             // 
             // idNewBox
             // 
@@ -468,6 +480,8 @@ namespace Death_Game_Launcher
             this.label9.Size = new Size(76, 13);
             this.label9.TabIndex = 13;
             this.label9.Text = "Steam Launch";
+            this.label9.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.label9.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
             // 
             // steamLaunchNewBox
             // 
@@ -479,6 +493,8 @@ namespace Death_Game_Launcher
             this.steamLaunchNewBox.TabIndex = 14;
             this.steamLaunchNewBox.UseVisualStyleBackColor = true;
             this.steamLaunchNewBox.Click += new EventHandler(this.SteamCheck_Click);
+            this.steamLaunchNewBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.steamLaunchNewBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
             // 
             // label10
             // 
@@ -488,6 +504,8 @@ namespace Death_Game_Launcher
             this.label10.Size = new Size(86, 13);
             this.label10.TabIndex = 15;
             this.label10.Text = "Shortcut Launch";
+            this.label10.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.label10.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
             // 
             // shortcutLaunchNewBox
             // 
@@ -499,6 +517,8 @@ namespace Death_Game_Launcher
             this.shortcutLaunchNewBox.TabIndex = 16;
             this.shortcutLaunchNewBox.UseVisualStyleBackColor = true;
             this.shortcutLaunchNewBox.Click += new EventHandler(this.ShortcutCheck_Click);
+            this.shortcutLaunchNewBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.shortcutLaunchNewBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
             // 
             // browseBtn
             // 
@@ -509,6 +529,8 @@ namespace Death_Game_Launcher
             this.browseBtn.Text = "...";
             this.browseBtn.UseVisualStyleBackColor = true;
             this.browseBtn.Click += new EventHandler(this.Browse_Click);
+            this.browseBtn.MouseHover += new EventHandler(this.Browse_MouseHover);
+            this.browseBtn.MouseLeave += new EventHandler(this.Browse_MouseLeave);
             // 
             // removeBtn
             // 
@@ -519,6 +541,8 @@ namespace Death_Game_Launcher
             this.removeBtn.Text = "Remove";
             this.removeBtn.UseVisualStyleBackColor = true;
             this.removeBtn.Click += new EventHandler(this.Remove_Click);
+            this.removeBtn.MouseHover += new EventHandler(this.Remove_MouseHover);
+            this.removeBtn.MouseLeave += new EventHandler(this.Remove_MouseLeave);
         }
 
         //Un-checks the 'Shortcut Launch' CheckBox if the 'Steam Launch' CheckBox gets checked, as a shortcut launch with a Steam game is not needed
@@ -539,8 +563,9 @@ namespace Death_Game_Launcher
         private void Browse_Click(object sender, EventArgs e)
         {
             OpenFileDialog d = new OpenFileDialog();
-            d.ShowDialog();
-            this.idNewBox.Text = d.FileName;
+            DialogResult res = d.ShowDialog();
+            if (res == DialogResult.OK)
+                this.idNewBox.Text = d.FileName;
         }
 
         //Removes the changes from the listing
@@ -560,5 +585,48 @@ namespace Death_Game_Launcher
         public GroupBox Group { get { return this.groupBox1; } }
         //Sets the Location of the GroupBox
         public Point Location { set { this.groupBox1.Location = value; } }
+
+        //Tooltip Methods for labels and such
+        ToolTip tip = new ToolTip();
+        private void Path_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("The path used to launch the game. If it is a Steam launch, the launch path should be set as the game's Steam ID number.", _parent, ((Control)sender).Location, 10000);
+        }
+        private void Path_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(_parent);
+        }
+        private void SteamLaunch_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("Whether or not the game should be launched through Steam", _parent, ((Control)sender).Location, 10000);
+        }
+        private void SteamLaunch_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(_parent);
+        }
+        private void ShortcutLaunch_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("Whether or not the game should be launched by creating a shortcut. This may help if a local game is crashing while launching or not launching at all", _parent, ((Control)sender).Location, 10000);
+        }
+        private void ShortcutLaunch_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(_parent);
+        }
+        private void Browse_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("Browse files", _parent, ((Control)sender).Location, 10000);
+        }
+        private void Browse_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(_parent);
+        }
+        private void Remove_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("Remove modifications to this game", _parent, ((Control)sender).Location, 10000);
+        }
+        private void Remove_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(_parent);
+        }
     }
 }

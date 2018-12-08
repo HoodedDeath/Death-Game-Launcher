@@ -12,8 +12,11 @@ namespace Death_Game_Launcher
 {
     public partial class AddGameForm : Form
     {
+        //List of the names given to the GroupBoxes within the panel, for searching
         private List<string> groupBoxes = new List<string>();
+        //List of games added, to be filled when the form is closing and to be retrieved later by the object that created and called this this Form
         public List<Game> Games { get; set; } = new List<Game>();
+        //Structure to hold and return the data of a game
         public struct Game
         {
             public string name;
@@ -21,125 +24,160 @@ namespace Death_Game_Launcher
             public bool isSteam;
             public bool useShortcut;
         }
+        //Initialization
         public AddGameForm()
         {
             InitializeComponent();
+            //File drag and drop
             this.AllowDrop = true;
             this.DragEnter += new DragEventHandler(GameDrag);
             this.DragDrop += new DragEventHandler(GameDrop);
+            //Adds the first GroupBox to the panel
             AddGroup();
         }
+        //Initial drag event
         private void GameDrag(object sender, DragEventArgs e)
         {
+            //Only shows the copy effect if the drag type is a file
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
         }
+        //File Dropped event
         private void GameDrop(object sender, DragEventArgs e)
         {
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            foreach (string file in files) AddGame(file);
+            //Only happens if the drag type is a file
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                //Paths of all files dropped into the Form
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                //Runs through each file dropped in to add them to the list
+                foreach (string file in files) AddGame(file);
+            }
         }
-
+        //Called when a file is dropped, used to Add the name and path of the file to the list
         private void AddGame(string path)
         {
-
+            //If the bottom-most GroupBox's Path TextBox is not empty, add a new GroupBox to the Panel
+            if (!TestLastEmpty())
+                AddGroup();
+            //Finds the 'nameTextBox' and sets its text to the name of the file
+            /*Process:
+             * Split the path to the file at each '\' character
+             * Get the last item in the split array (by splitting again and counting it, since I am not storing the array, as it's only used once and I found no measureable performance difference)
+             * Split the resulting string at the '.' character, splitting the name from the extension of the file (this can, though, split other areas of the file. Example: A file named 'App.v1.exe' will result in the name being input as 'App')
+             * Save the first item (the file name) to 'nameTextBox'
+            */
+            ((panel1.Controls.Find(this.groupBoxes[count - 1], false).LastOrDefault() as GroupBox).Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
+            //Finds the 'pathTextBox' and saves the path of the file to it
+            ((panel1.Controls.Find(this.groupBoxes[count - 1], false).LastOrDefault() as GroupBox).Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text = path;
+            //Finds the 'steamCheckBox' and sets it to false, as the drag drop is a local file
+            ((panel1.Controls.Find(this.groupBoxes[count - 1], false).LastOrDefault() as GroupBox).Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked = false;
+            //Finds the 'shortcutCheckBox' and sets it to false, as a shortcut launch may not be wanted by default, though it can solve problems with games not launching correctly
+            ((panel1.Controls.Find(this.groupBoxes[count - 1], false).LastOrDefault() as GroupBox).Controls.Find("shortcutCheckBox", true).FirstOrDefault() as CheckBox).Checked = false;
         }
+
+        //Adds an empty GroupBox to the bottom of the Listing
         private void AddGroup()
         {
+            //Reset the Panel's Auto Scroll Position to avoid strange spacing between the GroupBoxes
             panel1.AutoScrollPosition = new Point(0, 0);
+            //Creates a new AddGameGrouping to add in the values
             AddGameGrouping g = new AddGameGrouping
             {
+                //The Location of the new GroupBox is 136 px below the previous one (136 being the height of the GroupBox plus the 3 padding on top and bottom)
                 Location = new Point(location[0], location[1] += 136),
+                //The name given to the GroupBox, which is "groupBox" and the number of the previous GroupBox added plus one (used for finding the most recent one added)
                 BoxName = "groupBox" + this.count++
             };
+            //Get the GroupBox from the AddGameGrouping instance and add it into the Panel
             panel1.Controls.Add(g.Group);
+            //Adds the name into the 'groupBoxes' List for later searching
             groupBoxes.Add(g.BoxName);
-            MessageBox.Show(g.BoxName);
+            //If there are 3 or more GroupBoxes in the Panel, increase the width of the Panel to compensate for the vertical Scroll Bar, avoiding a horizontal Scroll Bar showing
             if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
         }
 
-        private void BrowseButton_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog d = new OpenFileDialog();
-            d.ShowDialog();
-            string path = d.FileName;
-            pathTextBox.Text = path;
-            MessageBox.Show(path);
-            if (nameTextBox.Text == null || nameTextBox.Text == "")
-                nameTextBox.Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
-        }
-
+        //Captures the KeyDown event while the Form is active
         private void AddGameForm_KeyDown(object sender, KeyEventArgs e)
         {
+            //If the user pressed escape, try to exit as if the 'Cancel' button was clicked
             if (e.KeyCode == Keys.Escape)
                 Cancel_Click(sender, null);
         }
 
-        private bool exit = false;
+        //Called when the user clicks the 'Confirm' Button
         private void Confirm_Click(object sender, EventArgs e)
         {
+            //Runs through each GroupBox in the Panel
             foreach (GroupBox g in panel1.Controls)
             {
+                //Creates a new 'Game' instance to add the details of the GroupBox to the 'Games' List
                 this.Games.Add(new Game()
                 {
+                    //Finds the 'nameTextBox' and saves its value
                     name = (g.Controls.Find("nameTextBox", true).FirstOrDefault() as TextBox).Text,
+                    //Finds the 'pathTextBox' and saves its value
                     path = (g.Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox).Text,
+                    //Finds the 'steamCheckBox' and saves its value
                     isSteam = (g.Controls.Find("steamCheckBox", true).FirstOrDefault() as CheckBox).Checked,
+                    //Finds the 'shortcutCheckBox' and saves its value
+                    //Only true if the CheckBox is both checked and enabled (checking the Steam launch CheckBox disables this CheckBox, as a shortcut launch is not needed for a Steam launch)
                     useShortcut = (g.Controls.Find("shortcutCheckBox", true).FirstOrDefault() as CheckBox).Checked && (g.Controls.Find("shortcutCheckBox", true).FirstOrDefault() as CheckBox).Enabled
                 });
             }
+            //Sets the Form's DialogResult to OK
             this.DialogResult = DialogResult.OK;
-            exit = true;
+            //Closes the Form
             Close();
         }
-
+        //Called when the user clicks the 'Cancel' button or presses the Escape key
         private void Cancel_Click(object sender, EventArgs e)
         {
+            //Sets the Form's DialogResult to Cancel
             this.DialogResult = DialogResult.Cancel;
-            this.exit = false;
+            //Closes the Form
             Close();
         }
-
+        //Event happens just before the Form actually closes
         private void AddGameForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (exit)
+            //If the user pressed the 'Confirm' button, allow exit without confirmation
+            if (this.DialogResult == DialogResult.OK)
                 e.Cancel = false;
-            else if (MessageBox.Show("Cancelling will lose list of games to add", "Confirm Cancel", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                e.Cancel = false;
+            //Otherwise, only exit if the user clicks the 'Yes' button on the confirmation dialog
             else
-                e.Cancel = true;
+                e.Cancel = !(MessageBox.Show("Cancelling will lose list of games to add", "Confirm Cancel", MessageBoxButtons.YesNo) == DialogResult.Yes);
         }
 
-        private void Remove_Click(object sender, EventArgs e)
-        {
-            //Does nothing yet. Removal from list will be added soon
-        }
-
+        //The current location of the last added GroupBox in the Panel. The X value is not changed, the Y value defaults to the the height a GroupBox would be above the Panel, height plus padding of the bottom
         private int[] location = new int[] { 3, -133 };
+        //Current count of the GroupBoxes in the Panel
         private int count = 0;
+        //Called when the user clicks the 'Add Game' button
         private void AddGame_Click(object sender, EventArgs e)
         {
-            Control[] groupbox = panel1.Controls.Find(groupBoxes[count - 1], false);
-            TextBox textbox = new TextBox { Text = "#FAILED#" };
+            //If the bottom-most GroupBox's Path TextBox is not empty, add a new GroupBox to the Panel
+            if (!TestLastEmpty())
+                AddGroup();
+        }
+        //Tests if the bottom-most GroupBox has an empty Path TextBox and should be considered empty
+        private bool TestLastEmpty()
+        {
+            //Finds every GroupBox in the panel that has the name of the last GroupBox added, this should only result in one item returned
+            Control[] groupbox = panel1.Controls.Find(this.groupBoxes[count - 1], false);
+            //A TextBox used to test if the pathTextBox is found within the GroupBox
+            TextBox textbox = new TextBox() { Text = "#FAILED#" };
+            //As long as there was a GroupBox found in the panel,
             if (groupbox != null && groupbox.Length > 0)
+                //Attempt to find the 'pathTextBox' within the last GroupBox (using the last one, incase there happened to be multiple, to make sure we get the bottom-most GroupBox, which should be the empty one if any are empty) and save that TextBox to the 'textbox' variable for later testing
                 textbox = groupbox.LastOrDefault().Controls.Find("pathTextBox", true).FirstOrDefault() as TextBox;
+            //String to store the value of the 'pathTextBox', if there is a value
             string lastpath = "";
+            //If the 'textbox' variable is not empty and it is not the 'fail' default TextBox
             if (textbox != null && textbox.Text != "#FAILED#")
-                 lastpath= textbox.Text;
-            bool lastempty = !(lastpath == null || lastpath == "");
-
-            if (lastempty)
-            {
-                panel1.AutoScrollPosition = new Point(0, 0);
-                AddGameGrouping g = new AddGameGrouping
-                {
-                    Location = new Point(location[0], location[1] += 136),
-                    BoxName = "groupBox" + count++
-                };
-                panel1.Controls.Add(g.Group);
-                groupBoxes.Add(g.BoxName);
-                MessageBox.Show(g.BoxName);
-                if (count >= 3 && panel1.Size.Width != 265) panel1.Size = new Size(265, panel1.Size.Height);
-            }
+                //Get the text of the TextBox and store it in the 'lastpath' variable
+                lastpath = textbox.Text;
+            //If the 'lastpath' string is empty (either a null value or a zero-length string), this will be true, signalling that the last GroupBox data is considered empty
+            return lastpath == null || lastpath == "";
         }
     }
 
@@ -260,37 +298,54 @@ namespace Death_Game_Launcher
 
             this.groupBox1.ResumeLayout();
         }
-        public Point Location
-        {
-            get { return this.groupBox1.Location; }
-            set { this.groupBox1.Location = value; }
-        }
+        //Gets and Sets the location of the groupBox1
+        public Point Location { get { return this.groupBox1.Location; } set { this.groupBox1.Location = value; } }
+        //Gets groupBox1 for it to be added into other Controls
         public GroupBox Group { get { return this.groupBox1; } }
+        //Gets the game path from the 'pathTextBox'
         public string Path { get { return this.pathTextBox.Text; } }
+        //Gets the game name from the 'nameTextBox'
         public string Name { get { return this.nameTextBox.Text; } }
+        //Gets whether or not the 'steamCheckBox' is checked
         public bool IsSteamLaunch { get { return this.steamCheckBox.Checked; } }
+        //Gets whether or not the 'shortcutCheckBox' is checked and enabled
         public bool UseShortcut { get { return this.shortcutCheckBox.Checked && this.shortcutCheckBox.Enabled; } }
-        public string BoxName
-        {
-            get { return this.groupBox1.Name; }
-            set { this.groupBox1.Name = value; }
-        }
+        //Gets and Sets the Name of groupBox1
+        public string BoxName { get { return this.groupBox1.Name; } set { this.groupBox1.Name = value; } }
 
+        //
         private void Remove_Click(object sender, EventArgs e)
         {
             //Does nothing yet. Removal from list will be added soon
         }
 
+        //Called when the user clicks the '...' (Browse) button
         private void BrowseButton_Click(object sender, EventArgs e)
         {
+            //OpenFileDialog to select a file to get data from
             OpenFileDialog d = new OpenFileDialog();
-            d.ShowDialog();
-            string path = d.FileName;
-            pathTextBox.Text = path;
-            if (nameTextBox.Text == null || nameTextBox.Text == "")
-                nameTextBox.Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
+            //Shows the Dialog and saves the DialogResult
+            DialogResult res = d.ShowDialog();
+            //Only if the user actually selected a file
+            if (res == DialogResult.OK)
+            {
+                //Gets the path of the selected file
+                string path = d.FileName;
+                //Sets the 'pathTextBox' Text value to the path of the file
+                pathTextBox.Text = path;
+                //If the name was not already set, we'll set the 'nameTextBox' Text value to the file's name
+                if (nameTextBox.Text == null || nameTextBox.Text == "")
+                    /*Process:
+                     * Split the path to the file at each '\' character
+                     * Get the last item in the split array (by splitting again and counting it, since I am not storing the array, as it's only used once and I found no measureable performance difference)
+                     * Split the resulting string at the '.' character, splitting the name from the extension of the file (this can, though, split other areas of the file. Example: A file named 'App.v1.exe' will result in the name being input as 'App')
+                     * Save the first item (the file name) to 'nameTextBox'
+                    */
+                    nameTextBox.Text = path.Split('\\')[path.Split('\\').Length - 1].Split('.')[0];
+            }
         }
 
+        //Enables the 'shortcutCheckBox' if the 'steamCheckBox' is not checked and disables the 'shortcutCheckBox' if the 'steamCheckBox' is checked
         private void SteamChecked_Changed(object sender, EventArgs e)
         {
             this.shortcutCheckBox.Enabled = !(this.steamCheckBox.Checked);

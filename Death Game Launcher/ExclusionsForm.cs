@@ -22,14 +22,20 @@ namespace Death_Game_Launcher
         public ExclusionsForm()
         {
             InitializeComponent();
+            //Read through the Exclusions file
             ReadExclusions();
+            //Lists out to found exclusions
             List();
         }
+        //Used to list out all the exclusions
         private void List()
         {
+            //The current position of the listed item
             int[] pos = new int[] { 0, -17 };
+            //Goes through each Manifest (each exclusion)
             foreach (Manifest m in _exclusionsList)
             {
+                //Adds a new CheckBox to the Panel, with the name of the game in the current Manifest
                 panel1.Controls.Add(new CheckBox()
                 {
                     AutoSize = true,
@@ -40,10 +46,12 @@ namespace Death_Game_Launcher
                     Location = new Point(pos[0], pos[1] += 17)
                 });
             }
+            //Repositions the Accept and Cancel buttons to be below the Panel after the Form and Panel auto size
             cancelButton.Location = new Point(cancelButton.Location.X, panel1.Height + 13 + 3 + 3);
             acceptButton.Location = new Point(acceptButton.Location.X, panel1.Height + 13 + 3 + 3);
         }
 
+        //Reads through the Exclusions file
         private void ReadExclusions()
         {
             try
@@ -96,11 +104,7 @@ namespace Death_Game_Launcher
                     sr.Close();
                     sr.Dispose();
                 }
-                //Loops through each game in the exclusions and removes it from the list of games
-                /*foreach (Manifest m in _exclusionsList.ToArray())
-                {
-                    _gamesList.Remove(m);
-                }*/
+                //Sorts the List of exclusions
                 this._exclusionsList.Sort((x, y) => x.name.CompareTo(y.name));
             }
             catch (Exception e)
@@ -109,6 +113,7 @@ namespace Death_Game_Launcher
             }
         }
 
+        //Saves the exclusions to the Exclusions file
         private void AddExclusions()
         {
             try
@@ -122,7 +127,9 @@ namespace Death_Game_Launcher
                 //Loops through all games listed
                 foreach (CheckBox c in panel1.Controls)
                 {
+                    //Matching game Manifest
                     Manifest m = new Manifest();
+                    //Finds the Manifest that matches the current game being checked
                     foreach (Manifest ma in this._exclusionsList)
                     {
                         if (ma.name == c.Text)
@@ -166,39 +173,46 @@ namespace Death_Game_Launcher
                     Directory.CreateDirectory(t);
         }
 
+        //When the user presses a key
         private void ExclusionsForm_KeyDown(object sender, KeyEventArgs e)
         {
+            //Cancel style exit if the user presses Escape
             if (e.KeyCode == Keys.Escape)
             {
                 this.DialogResult = DialogResult.Cancel;
                 Close();
             }
+            //Confirm style exit if the user presses Enter
             else if (e.KeyCode == Keys.Enter)
             {
                 this.DialogResult = DialogResult.OK;
                 Close();
             }
         }
-
+        //Cancel button clicked, sets the DialogResult to Cancel
         private void cancelButton_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             Close();
         }
-
+        //Accept button clicked, sets the DialogResult to OK
         private void acceptButton_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.OK;
             Close();
         }
-
+        //Before Form closes
         private void ExclusionsForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            //If the Form's DialogResult is OK
             if (this.DialogResult == DialogResult.OK)
             {
+                //Save exclusions
                 AddExclusions();
+                //Exit without confirmation popup
                 e.Cancel = false;
             }
+            //Otherwise, only exit if the user presses 'Yes' on the confirmation popup
             else
                 e.Cancel = !(MessageBox.Show("All changes will be lost", "Are you sure?", MessageBoxButtons.YesNo) == DialogResult.Yes);
         }
