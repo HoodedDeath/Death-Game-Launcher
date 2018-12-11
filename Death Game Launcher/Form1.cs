@@ -598,13 +598,16 @@ namespace Death_Game_Launcher
             for (int i = 0; i < m.Length; i++)
             {
                 //Grouping is the class that holds all the data for each listed game
-                Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, m[i].useShortcut, this);
+                Grouping group = new Grouping(m[i], this);
+
+                //Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, m[i].useShortcut, this);
+                
                 //If i modulo 4 returns 0:
                 //True: The next game should be listed on the next row, add 86 (the height of the Grouping with padding) to the current Y value
                 //False: The next game should be listed on the same row, the X value is 236 (width of the Grouping with padding) multiplied my the remainder when dividing i by 4
                 group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
                 //Add the Grouping to the panel's controls
-                panel1.Controls.Add(group.Group);
+                panel1.Controls.Add(group/*.Group*/);
                 //If there is enough games listed for there to be a need for a scroll bar, adjust the size of the panel to fit the scroll bar
                 if (i > 24 && panel1.Size.Width != 960) panel1.Size = new Size(960, panel1.Size.Height);
             }
@@ -811,23 +814,96 @@ namespace Death_Game_Launcher
         }
     }
 
-    public class Grouping
+    public class Grouping : GroupBox
     {
-        private GroupBox groupBox = new GroupBox();
-        private PictureBox iconBox = new PictureBox();
-        private PictureBox settingsBox = new PictureBox();
-        private PictureBox launchBox = new PictureBox();
+        //private GroupBox groupBox = new GroupBox();
+        private PictureBox iconBox; // = new PictureBox();
+        private PictureBox settingsBox; // = new PictureBox();
+        private PictureBox launchBox; // = new PictureBox();
         //Path can either be the Steam launch id or the path to the executable file
-        private string path = "";
+        /*private string path = "";
         private string name = "";
         private bool isSteamLaunch = false;
-        private bool useShortcut = false;
+        private bool useShortcut = false;*/
         //Used for making update and deletion calls
-        public Form1 parent;
+        //public Form1 parent;
 
-        public Grouping(string name, string path, bool steamLaunch, bool shortcut, Form1 parent)
+        //New Declaration
+        public Form1.Manifest Manifest { get; set; }
+        private Form1 _parent;
+        public Grouping(Form1.Manifest manifest, Form1 parent)
         {
-            this.parent = parent;
+            this._parent = parent;
+            this.Manifest = manifest;
+            InitializeComponent();
+        }
+        private void InitializeComponent()
+        {
+            this.iconBox = new PictureBox();
+            this.settingsBox = new PictureBox();
+            this.launchBox = new PictureBox();
+            ComponentResourceManager resources = new ComponentResourceManager(typeof(Grouping));
+            int i = new Random().Next(1, 7);
+            //
+            this.SuspendLayout();
+            //
+            // iconBox
+            //
+            this.iconBox.BackgroundImage = (i % 2 == 0) ? Properties.Resources.Logo_n_inv : Properties.Resources.Logo_n;
+            this.iconBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.iconBox.Location = new Point(6, 19);
+            this.iconBox.Name = "iconBox";
+            this.iconBox.Size = new Size(50, 50);
+            this.iconBox.TabStop = false;
+            // 
+            // settingsBox
+            // 
+            this.settingsBox.MouseClick += new MouseEventHandler(this.Settings_MouseDown);
+            this.settingsBox.BackgroundImage = Properties.Resources.Settings;
+            this.settingsBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.settingsBox.Location = new Point(62, 19);
+            this.settingsBox.Name = "settingsBox";
+            this.settingsBox.Size = new Size(50, 50);
+            this.settingsBox.TabStop = false;
+            // 
+            // launchBox
+            // 
+            this.launchBox.BackgroundImage = Properties.Resources.Play;
+            this.launchBox.BackgroundImageLayout = ImageLayout.Zoom;
+            this.launchBox.Location = new Point(118, 19);
+            this.launchBox.Name = "launchBox";
+            this.launchBox.Size = new Size(50, 50);
+            this.launchBox.TabStop = false;
+            this.launchBox.Click += new EventHandler(this.Start_Click);
+            //
+            // Grouping
+            //
+            this.Controls.Add(this.iconBox);
+            this.Controls.Add(this.settingsBox);
+            this.Controls.Add(this.launchBox);
+            this.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
+            this.Name = "groupBox";
+            this.Size = new Size(230, 80);
+            this.TabStop = false;
+            this.Text = Truncate(this.Manifest.name, 22);
+            //
+            this.ResumeLayout();
+            this.PerformLayout();
+
+            //Add circle border to Play Button
+            /*System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
+            gp.AddEllipse(0, 0, this.launchBox.Size.Width, this.launchBox.Size.Height);
+            launchBox.Region = new Region(gp);*/
+        }
+        //
+
+        /*public Grouping(string name, string path, bool steamLaunch, bool shortcut, Form1 parent)
+        {
+            this.iconBox = new PictureBox();
+            this.settingsBox = new PictureBox();
+            this.launchBox = new PictureBox();
+            //
+            this._parent = parent;
             this.path = path;
             this.name = name;
             this.isSteamLaunch = steamLaunch;
@@ -866,25 +942,25 @@ namespace Death_Game_Launcher
             //
             // groupBox
             // 
-            this.groupBox.Controls.Add(this.iconBox);
-            this.groupBox.Controls.Add(this.settingsBox);
-            this.groupBox.Controls.Add(this.launchBox);
-            this.groupBox.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
-            this.groupBox.Name = "groupBox";
-            this.groupBox.Size = new Size(230, 80);
-            this.groupBox.TabStop = false;
-            this.groupBox.Text = Truncate(name, 22);
+            //this/*.groupBox*///.Controls.Add(this.iconBox);
+            //this/*.groupBox*/.Controls.Add(this.settingsBox);
+            //this/*.groupBox*/.Controls.Add(this.launchBox);
+            //this/*.groupBox*/.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
+            //this/*.groupBox*/.Name = "groupBox";
+            //this/*.groupBox*/.Size = new Size(230, 80);
+            //this/*.groupBox*/.TabStop = false;
+            //this/*.groupBox*/.Text = Truncate(name, 22);
 
             //Add circle border to Play Button
-            System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
+            /*System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
             gp.AddEllipse(0, 0, this.launchBox.Size.Width, this.launchBox.Size.Height);
-            
-        }
-        public Point Location
+            launchBox.Region = new Region(gp);
+        }*/
+        /*public Point Location
         {
             get { return this.groupBox.Location; }
             set { this.groupBox.Location = value; }
-        }
+        }*/
 
         //Called when the launch button is clicked
         private void Start_Click(object sender, EventArgs e)
@@ -892,15 +968,15 @@ namespace Death_Game_Launcher
             try
             {
                 //If the game is a Steam launch, use Windows Explorer to call the Steam run game command
-                if (this.isSteamLaunch)
+                if (this.Manifest.steamLaunch)
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", "steam://rungameid/" + path);
+                    System.Diagnostics.Process.Start("explorer.exe", "steam://rungameid/" + this.Manifest.path);
                 }
                 else
                 {
                     //If the game should launch using a shortcut
                     //Shortcuts can help with games that are programmed to use a working directory to search for their files. If a game is failing to launch, try to launch it with the shortcut
-                    if (this.useShortcut)
+                    if (this.Manifest.useShortcut)
                     {
                         //Uses IWshRuntimeLibrary to make the shortcuts
                         IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
@@ -909,8 +985,8 @@ namespace Death_Game_Launcher
                         //Creates the shortcut
                         IWshRuntimeLibrary.IWshShortcut wsh = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(spath);
                         //Sets the launch path for the shortcut
-                        wsh.TargetPath = this.path;
-                        string[] t = path.Split('\\');
+                        wsh.TargetPath = this.Manifest.path;
+                        string[] t = this.Manifest.path.Split('\\');
                         string tpath = "";
                         //Gets the full path of the executable, except for the executable file itself, leaving the folder that will be used as the working directory
                         for (int i = 0; i < t.Length - 1; i++)
@@ -927,7 +1003,7 @@ namespace Death_Game_Launcher
                     else
                     {
                         //Launches the game
-                        System.Diagnostics.Process.Start(path);
+                        System.Diagnostics.Process.Start(this.Manifest.path);
                     }
                 }
                 if (new Config().CloseOnLaunch)
@@ -953,14 +1029,14 @@ namespace Death_Game_Launcher
                     ContextMenu cm = new ContextMenu();
                     cm.MenuItems.Add("Shortcut Settings", new EventHandler(this.Short));
                     cm.MenuItems.Add("Settings Application", new EventHandler(this.Settings_App));
-                    cm.Show(this.Group, new Point(e.X, e.Y));
+                    cm.Show(this/*.Group*/, new Point(e.X, e.Y));
                     break;
             }
         }
         //Used to launch external game settings apps based on which game it is, defaults to the launcher shortcut settings for that game
         private void Settings_App(object sender, EventArgs e)
         {
-            switch (this.path)
+            switch (this.Manifest.path)
             {
                 //If there is no path for some reason, default
                 case "":
@@ -1019,37 +1095,32 @@ namespace Death_Game_Launcher
         //Displays the shortcut settings form
         private void Short(object sender, EventArgs e)
         {
-            using (var form = new ShortcutSettings(this.name, this.path, this.isSteamLaunch, this.useShortcut))
+            using (var form = new ShortcutSettings(this.Manifest.name, this.Manifest.path, this.Manifest.steamLaunch, this.Manifest.useShortcut))
             {
                 DialogResult res = form.ShowDialog();
                 //If the changes were confirmed, update the game details
                 if (form.DialogResult == DialogResult.OK)
                 {
                     //Old details
-                    Form1.Manifest oldMan = new Form1.Manifest
-                    {
-                        name = this.name,
-                        path = this.path,
-                        steamLaunch = this.isSteamLaunch,
-                        useShortcut = this.useShortcut
-                    };
+                    Form1.Manifest oldMan = this.Manifest;
                     //Updated details
                     Form1.Manifest newMan = new Form1.Manifest
                     {
-                        name = (this.name = form.GameName),
-                        path = (this.path = form.GamePath),
-                        steamLaunch = (this.isSteamLaunch = form.IsSteamLaunch),
-                        useShortcut = (this.useShortcut = form.UseShortcut)
+                        name = form.GameName,
+                        path = form.GamePath,
+                        steamLaunch = form.IsSteamLaunch,
+                        useShortcut = form.UseShortcut
                     };
-                    this.groupBox.Text = Truncate(form.GameName, 22);
+                    this.Manifest = newMan;
+                    this.Text = Truncate(form.GameName, 22);
                     //Calls Form1.UpdateGame to update this game's details
-                    this.parent.UpdateGame(oldMan, newMan);
+                    this._parent.UpdateGame(oldMan, newMan);
                 }
                 //If the Delete button was clicked
                 else if (form.DialogResult == DialogResult.Abort)
                 {
                     //Call Form1.RemoveGame to delete game from listing
-                    this.parent.RemoveGame(this.name, this.path, this.isSteamLaunch, this.useShortcut);
+                    this._parent.RemoveGame(this.Manifest.name, this.Manifest.path, this.Manifest.steamLaunch, this.Manifest.useShortcut);
                 }
             }
         }
@@ -1061,6 +1132,6 @@ namespace Death_Game_Launcher
         }
 
         //Returns the GroupBox control
-        public GroupBox Group { get { return this.groupBox; } }
+        //public GroupBox Group { get { return this/*.groupBox*/; } }
     }
 }
