@@ -12,13 +12,21 @@ namespace Death_Game_Launcher
 {
     public partial class ShortcutSettings : Form
     {
-        public ShortcutSettings(string name, string path, bool isSteamLaunch, bool useShortcut)
+        /*public ShortcutSettings(string name, string path, bool isSteamLaunch, bool useShortcut)
         {
             InitializeComponent();
             this.GameName = name;
             this.GamePath = path;
             this.IsSteamLaunch = isSteamLaunch;
             this.UseShortcut = useShortcut;
+        }*/
+        public ShortcutSettings(Form1.Manifest manifest)
+        {
+            InitializeComponent();
+            this.GameName = manifest.name;
+            this.GamePath = manifest.path;
+            this.IsSteamLaunch = manifest.steamLaunch;
+            this.UseShortcut = manifest.useShortcut;
         }
 
         ToolTip tip = new ToolTip();

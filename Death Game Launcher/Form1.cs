@@ -16,7 +16,7 @@ namespace Death_Game_Launcher
     public partial class Form1 : Form
     {
         //Used for Close On Launch option
-        public static int isExit = 0;
+        private bool isExit = false;
         //Were Steam games scanned for at start
         private bool _scannedSteam = false;
         //List of games to be displayed
@@ -274,7 +274,7 @@ namespace Death_Game_Launcher
         {
             //isExit is used for the check box 'Close on launch' to close launcher without prompt
             //MessageBox is a prompt to ask the user if they want to cancel the exit
-            bool t = (e.Cancel = !(isExit == 1 || MessageBox.Show("Are you sure you want to exit?", "Exit", MessageBoxButtons.YesNo) == DialogResult.Yes));
+            bool t = (e.Cancel = !(this.isExit || MessageBox.Show("Are you sure you want to exit?", "Exit", MessageBoxButtons.YesNo) == DialogResult.Yes));
             //If the exit was not cancelled
             if (!t)
             {
@@ -665,10 +665,10 @@ namespace Death_Game_Launcher
         }
 
         //Used by 'Grouping' class for Deleting games
-        public void RemoveGame(string name, string path, bool steam, bool shortcut)
+        public void RemoveGame(Manifest manifest /*string name, string path, bool steam, bool shortcut*/)
         {
             //Generates the manifest for the game to be deleted
-            Manifest torem = new Manifest { name = name, path = path, steamLaunch = steam, useShortcut = shortcut };
+            Manifest torem = manifest; // new Manifest { name = name, path = path, steamLaunch = steam, useShortcut = shortcut };
             //Tries to remove the game from the games list and returns true if successful, false otherwise
             bool found = this._gamesList.Remove(torem);
             //If the game was found and removed
@@ -812,6 +812,18 @@ namespace Death_Game_Launcher
                 }
             }
         }
+
+        /// <summary>
+        /// Flags whether the launcher should close without a prompt (used for Close On Exit)
+        /// </summary>
+        /// <param name="b">If it should exit or not</param>
+        /// <returns>True if the flag was set, False if the user tries to set the flag to what it already is</returns>
+        public bool FlagExit(bool b)
+        {
+            bool r = !(b == this.isExit);
+            this.isExit = b;
+            return r;
+        }
     }
 
     public class Grouping : GroupBox
@@ -889,78 +901,8 @@ namespace Death_Game_Launcher
             //
             this.ResumeLayout();
             this.PerformLayout();
-
-            //Add circle border to Play Button
-            /*System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
-            gp.AddEllipse(0, 0, this.launchBox.Size.Width, this.launchBox.Size.Height);
-            launchBox.Region = new Region(gp);*/
         }
         //
-
-        /*public Grouping(string name, string path, bool steamLaunch, bool shortcut, Form1 parent)
-        {
-            this.iconBox = new PictureBox();
-            this.settingsBox = new PictureBox();
-            this.launchBox = new PictureBox();
-            //
-            this._parent = parent;
-            this.path = path;
-            this.name = name;
-            this.isSteamLaunch = steamLaunch;
-            this.useShortcut = shortcut;
-            int i = new Random().Next(1, 7);
-            ComponentResourceManager resources = new ComponentResourceManager(typeof(Form1));
-            // 
-            // iconBox
-            // 
-            this.iconBox.BackgroundImage = (i % 2 == 0) ? Properties.Resources.Logo_n_inv : Properties.Resources.Logo_n;
-            this.iconBox.BackgroundImageLayout = ImageLayout.Zoom;
-            this.iconBox.Location = new Point(6, 19);
-            this.iconBox.Name = "iconBox";
-            this.iconBox.Size = new Size(50, 50);
-            this.iconBox.TabStop = false;
-            // 
-            // settingsBox
-            // 
-            this.settingsBox.MouseClick += new MouseEventHandler(this.Settings_MouseDown);
-            this.settingsBox.BackgroundImage = Properties.Resources.Settings;
-            this.settingsBox.BackgroundImageLayout = ImageLayout.Zoom;
-            this.settingsBox.Location = new Point(62, 19);
-            this.settingsBox.Name = "settingsBox";
-            this.settingsBox.Size = new Size(50, 50);
-            this.settingsBox.TabStop = false;
-            // 
-            // launchBox
-            // 
-            this.launchBox.BackgroundImage = Properties.Resources.Play;
-            this.launchBox.BackgroundImageLayout = ImageLayout.Zoom;
-            this.launchBox.Location = new Point(118, 19);
-            this.launchBox.Name = "launchBox";
-            this.launchBox.Size = new Size(50, 50);
-            this.launchBox.TabStop = false;
-            this.launchBox.Click += new EventHandler(this.Start_Click);
-            //
-            // groupBox
-            // 
-            //this/*.groupBox*///.Controls.Add(this.iconBox);
-            //this/*.groupBox*/.Controls.Add(this.settingsBox);
-            //this/*.groupBox*/.Controls.Add(this.launchBox);
-            //this/*.groupBox*/.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
-            //this/*.groupBox*/.Name = "groupBox";
-            //this/*.groupBox*/.Size = new Size(230, 80);
-            //this/*.groupBox*/.TabStop = false;
-            //this/*.groupBox*/.Text = Truncate(name, 22);
-
-            //Add circle border to Play Button
-            /*System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
-            gp.AddEllipse(0, 0, this.launchBox.Size.Width, this.launchBox.Size.Height);
-            launchBox.Region = new Region(gp);
-        }*/
-        /*public Point Location
-        {
-            get { return this.groupBox.Location; }
-            set { this.groupBox.Location = value; }
-        }*/
 
         //Called when the launch button is clicked
         private void Start_Click(object sender, EventArgs e)
@@ -1006,11 +948,9 @@ namespace Death_Game_Launcher
                         System.Diagnostics.Process.Start(this.Manifest.path);
                     }
                 }
+                this._parent.FlagExit(new Config().CloseOnLaunch);
                 if (new Config().CloseOnLaunch)
-                {
-                    Form1.isExit = 1;
                     Application.Exit();
-                }
             }
             catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
@@ -1029,7 +969,7 @@ namespace Death_Game_Launcher
                     ContextMenu cm = new ContextMenu();
                     cm.MenuItems.Add("Shortcut Settings", new EventHandler(this.Short));
                     cm.MenuItems.Add("Settings Application", new EventHandler(this.Settings_App));
-                    cm.Show(this/*.Group*/, new Point(e.X, e.Y));
+                    cm.Show(this, new Point(e.X, e.Y));
                     break;
             }
         }
@@ -1095,7 +1035,7 @@ namespace Death_Game_Launcher
         //Displays the shortcut settings form
         private void Short(object sender, EventArgs e)
         {
-            using (var form = new ShortcutSettings(this.Manifest.name, this.Manifest.path, this.Manifest.steamLaunch, this.Manifest.useShortcut))
+            using (var form = new ShortcutSettings(this.Manifest))
             {
                 DialogResult res = form.ShowDialog();
                 //If the changes were confirmed, update the game details
@@ -1120,7 +1060,7 @@ namespace Death_Game_Launcher
                 else if (form.DialogResult == DialogResult.Abort)
                 {
                     //Call Form1.RemoveGame to delete game from listing
-                    this._parent.RemoveGame(this.Manifest.name, this.Manifest.path, this.Manifest.steamLaunch, this.Manifest.useShortcut);
+                    this._parent.RemoveGame(this.Manifest);
                 }
             }
         }
