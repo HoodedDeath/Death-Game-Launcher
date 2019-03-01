@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using Microsoft.Win32;
 
 namespace Death_Game_Launcher
 {
@@ -34,8 +35,42 @@ namespace Death_Game_Launcher
         //Path to file of all modifications to games in listing
         private readonly string _gameModsFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Mods.cfg");
 
+        //Registry path to application settings
+        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+
+
         public Form1()
         {
+            //Check if Registry directory exists
+            try
+            {
+                /*RegistryKey r = RegistryKey.OpenRemoteBaseKey(RegistryHive.CurrentUser, regpath);
+                if (r != null)
+                    MessageBox.Show("Exists");
+                else
+                    MessageBox.Show("No Exists");*/
+                object ret = Registry.GetValue(regpath, "ExistTest", null);
+                /*if (ret != null && ret.ToString() != "Test Failed")
+                    MessageBox.Show("Exists, " + ret.ToString());
+                else
+                    MessageBox.Show("No Exists");*/
+                if (ret == null)
+                {
+                    //When the Registry does not exist
+                    Registry.SetValue(regpath, "ExistTest", 1, RegistryValueKind.DWord);
+                }
+                //MessageBox.Show((string)Registry.GetValue(regpath, "Inclusions", "FAIL"));
+                string s = "";
+                foreach (string a in (string[])Registry.GetValue(regpath, "Inclusions", null))
+                    s += (a + "\n");
+                MessageBox.Show(s);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to checked Registry\n" + ex.Message);
+            }
+            //
+
             Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -119,6 +154,8 @@ namespace Death_Game_Launcher
             //Modify any games based on the Modifications file
             try
             {
+                //Makes sure modifications List is empty (avoids duplications caused by loading the modifications Form and exiting by saving even though there were no changes made)
+                this._gameMods = new List<Manifest[]>();
                 //Makes sure all subfolders exist
                 GenSubfolders(_gameModsFile);
                 //Only run if modifications file exists
