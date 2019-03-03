@@ -41,29 +41,27 @@ namespace Death_Game_Launcher
 
         public Form1()
         {
-            //Check if Registry directory exists
+            //Check if Registry entries exist
             try
             {
-                /*RegistryKey r = RegistryKey.OpenRemoteBaseKey(RegistryHive.CurrentUser, regpath);
-                if (r != null)
-                    MessageBox.Show("Exists");
-                else
-                    MessageBox.Show("No Exists");*/
-                object ret = Registry.GetValue(regpath, "ExistTest", null);
-                /*if (ret != null && ret.ToString() != "Test Failed")
-                    MessageBox.Show("Exists, " + ret.ToString());
-                else
-                    MessageBox.Show("No Exists");*/
-                if (ret == null)
+                //To be deleted
+                /*if (Registry.GetValue(regpath, "ExistTest", null) == null)
                 {
                     //When the Registry does not exist
                     Registry.SetValue(regpath, "ExistTest", 1, RegistryValueKind.DWord);
-                }
+                }*/
+                if (Registry.GetValue(regpath, "Inclusions", null) == null)
+                    Registry.SetValue(regpath, "Inclusions", new string[0], RegistryValueKind.MultiString);
+                if (Registry.GetValue(regpath, "Exclusions", null) == null)
+                    Registry.SetValue(regpath, "Exclusions", new string[0], RegistryValueKind.MultiString);
+                if (Registry.GetValue(regpath, "Modifications", null) == null)
+                    Registry.SetValue(regpath, "Modifications", new string[0], RegistryValueKind.MultiString);
+
                 //MessageBox.Show((string)Registry.GetValue(regpath, "Inclusions", "FAIL"));
-                string s = "";
+                /*string s = "";
                 foreach (string a in (string[])Registry.GetValue(regpath, "Inclusions", null))
                     s += (a + "\n");
-                MessageBox.Show(s);
+                MessageBox.Show(s);*/
             }
             catch (Exception ex)
             {
@@ -151,6 +149,8 @@ namespace Death_Game_Launcher
             //
             //Sort _gamesList before modifying, for pretty much no reason but my own desire
             _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
+            //Temporary variable to hold the list of modifications incase the try block fails after erasing the list
+            List<Manifest[]> holdmod = this._gameMods;
             //Modify any games based on the Modifications file
             try
             {
@@ -230,11 +230,21 @@ namespace Death_Game_Launcher
                     }
                 }
             }
-            catch (Exception e) { MessageBox.Show("Failed to load modification list:\n" + e.Message); }
+            catch (Exception e)
+            {
+                //Restores the game modifications List whenever the try block fails, avoiding loss of changes to games due to an exception
+                this._gameMods = holdmod;
+                //Displays error
+                MessageBox.Show("Failed to load modification list:\n" + e.Message);
+            }
             //
+            //Temporary variable to hold the exclusions List incase the try block fails after erasing the exclusions List
+            List<Manifest> holdex = this._exclusionsList;
             //Remove excluded Steam games
             try
             {
+                //Clears the exclusions List before reading anything, avoiding duplication in the case of opening the Exclusions Form and saving it without changing anything
+                this._exclusionsList = new List<Manifest>();
                 //Makes sure all subfolders exist
                 GenSubfolders(_gameExclusionFile);
                 //Only runs if exclusion file exists
@@ -291,6 +301,9 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
+                //Restores the exclusions list whenever the try block fails
+                this._exclusionsList = holdex;
+                //Displays error
                 MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
             }
             //
@@ -298,12 +311,14 @@ namespace Death_Game_Launcher
             _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
         }
 
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
             //Saves the state of the 'Close on Launch' check box
-            Config config = new Config();
-            config.CloseOnLaunch = closeCheckBox.Checked;
+            Config config = new Config
+            {
+                CloseOnLaunch = closeCheckBox.Checked
+            };
             config.Save();
         }
 
@@ -491,6 +506,7 @@ namespace Death_Game_Launcher
             public string path;
             public bool steamLaunch;
             public bool useShortcut;
+
             //Easy way to print out details of game Manifest, mostly for debugging/testing
             public override string ToString()
             {
@@ -499,11 +515,39 @@ namespace Death_Game_Launcher
             //
             public static bool operator ==(Manifest a, Manifest b)
             {
-                return a.name == b.name && a.path == b.path && a.steamLaunch == b.steamLaunch && a.useShortcut == b.useShortcut;
+                return a.name == b.name &&
+                    a.path == b.path &&
+                    a.steamLaunch == b.steamLaunch &&
+                    a.useShortcut == b.useShortcut;
             }
             public static bool operator !=(Manifest a, Manifest b)
             {
-                return a.name != b.name || a.path != b.path || a.steamLaunch != b.steamLaunch || a.useShortcut != b.useShortcut;
+                return a.name != b.name ||
+                    a.path != b.path ||
+                    a.steamLaunch != b.steamLaunch ||
+                    a.useShortcut != b.useShortcut;
+            }
+            public override int GetHashCode()
+            {
+                var hashCode = -1955659842;
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(name);
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(path);
+                hashCode = hashCode * -1521134295 + steamLaunch.GetHashCode();
+                hashCode = hashCode * -1521134295 + useShortcut.GetHashCode();
+                return hashCode;
+            }
+            public override bool Equals(object obj)
+            {
+                if (!(obj is Manifest))
+                {
+                    return false;
+                }
+
+                var manifest = (Manifest)obj;
+                return name == manifest.name &&
+                       path == manifest.path &&
+                       steamLaunch == manifest.steamLaunch &&
+                       useShortcut == manifest.useShortcut;
             }
         }
         //Scans paths for games
@@ -635,14 +679,13 @@ namespace Death_Game_Launcher
             for (int i = 0; i < m.Length; i++)
             {
                 //Grouping is the class that holds all the data for each listed game
-                Grouping group = new Grouping(m[i], this);
-
-                //Grouping group = new Grouping(m[i].name, m[i].path, m[i].steamLaunch, m[i].useShortcut, this);
-                
-                //If i modulo 4 returns 0:
-                //True: The next game should be listed on the next row, add 86 (the height of the Grouping with padding) to the current Y value
-                //False: The next game should be listed on the same row, the X value is 236 (width of the Grouping with padding) multiplied my the remainder when dividing i by 4
-                group.Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]));
+                Grouping group = new Grouping(m[i], this)
+                {
+                    //If i modulo 4 returns 0:
+                    //True: The next game should be listed on the next row, add 86 (the height of the Grouping with padding) to the current Y value
+                    //False: The next game should be listed on the same row, the X value is 236 (width of the Grouping with padding) multiplied my the remainder when dividing i by 4
+                    Location = (i % 4 == 0 ? new Point(location[0], location[1] += 86) : new Point(location[0] + (236 * (i % 4)), location[1]))
+                };
                 //Add the Grouping to the panel's controls
                 panel1.Controls.Add(group/*.Group*/);
                 //If there is enough games listed for there to be a need for a scroll bar, adjust the size of the panel to fit the scroll bar
@@ -652,7 +695,7 @@ namespace Death_Game_Launcher
 
         //Restarts application
         //Probably to be removed, it is mostly for easy testing
-        private void restartToolStripMenuItem_Click(object sender, EventArgs e)
+        private void RestartToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Restart();
         }
@@ -663,15 +706,17 @@ namespace Death_Game_Launcher
         }
 
         //Saves changes to the 'Close on Launch' setting
-        private void closeCheckBox_CheckedChanged(object sender, EventArgs e)
+        private void CloseCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            Config config = new Config();
-            config.CloseOnLaunch = closeCheckBox.Checked;
+            Config config = new Config
+            {
+                CloseOnLaunch = closeCheckBox.Checked
+            };
             config.Save();
         }
 
         //Called by 'Add Game' button in menu strip
-        private void addGameToolStripMenuItem_Click(object sender, EventArgs e)
+        private void AddGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (var form = new AddGameForm())
             {
@@ -762,7 +807,7 @@ namespace Death_Game_Launcher
         }
 
         //Called by clicking the 'Exclusions' button on the tool strip
-        private void exclusionsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ExclusionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Are there any games that have been excluded?
             //If so, show the form
@@ -810,7 +855,7 @@ namespace Death_Game_Launcher
         }
 
         //Called by clicking 'Changes' button on tool strip
-        private void changesToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ChangesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Saves the current list of changes to games
             AddGameModifications();
@@ -879,7 +924,7 @@ namespace Death_Game_Launcher
 
         //New Declaration
         public Form1.Manifest Manifest { get; set; }
-        private Form1 _parent;
+        private readonly Form1 _parent;
         public Grouping(Form1.Manifest manifest, Form1 parent)
         {
             this._parent = parent;

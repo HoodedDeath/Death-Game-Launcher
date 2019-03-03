@@ -68,14 +68,14 @@
             this.restartToolStripMenuItem1.Name = "restartToolStripMenuItem1";
             this.restartToolStripMenuItem1.Size = new System.Drawing.Size(110, 22);
             this.restartToolStripMenuItem1.Text = "Restart";
-            this.restartToolStripMenuItem1.Click += new System.EventHandler(this.restartToolStripMenuItem_Click);
+            this.restartToolStripMenuItem1.Click += new System.EventHandler(this.RestartToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(110, 22);
             this.exitToolStripMenuItem.Text = "Exit";
-            this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
             // panel1
             // 
@@ -113,7 +113,7 @@
             this.closeCheckBox.TabIndex = 9;
             this.closeCheckBox.Text = "Close Launcher on Game Launch";
             this.closeCheckBox.UseVisualStyleBackColor = true;
-            this.closeCheckBox.CheckedChanged += new System.EventHandler(this.closeCheckBox_CheckedChanged);
+            this.closeCheckBox.CheckedChanged += new System.EventHandler(this.CloseCheckBox_CheckedChanged);
             // 
             // editToolStripMenuItem
             // 
@@ -130,21 +130,21 @@
             this.addGameToolStripMenuItem.Name = "addGameToolStripMenuItem";
             this.addGameToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.addGameToolStripMenuItem.Text = "Add Game";
-            this.addGameToolStripMenuItem.Click += new System.EventHandler(this.addGameToolStripMenuItem_Click);
+            this.addGameToolStripMenuItem.Click += new System.EventHandler(this.AddGameToolStripMenuItem_Click);
             // 
             // exclusionsToolStripMenuItem
             // 
             this.exclusionsToolStripMenuItem.Name = "exclusionsToolStripMenuItem";
             this.exclusionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.exclusionsToolStripMenuItem.Text = "Exclusions";
-            this.exclusionsToolStripMenuItem.Click += new System.EventHandler(this.exclusionsToolStripMenuItem_Click);
+            this.exclusionsToolStripMenuItem.Click += new System.EventHandler(this.ExclusionsToolStripMenuItem_Click);
             // 
             // changesToolStripMenuItem
             // 
             this.changesToolStripMenuItem.Name = "changesToolStripMenuItem";
             this.changesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.changesToolStripMenuItem.Text = "Changes";
-            this.changesToolStripMenuItem.Click += new System.EventHandler(this.changesToolStripMenuItem_Click);
+            this.changesToolStripMenuItem.Click += new System.EventHandler(this.ChangesToolStripMenuItem_Click);
             // 
             // Form1
             // 

@@ -190,13 +190,13 @@ namespace Death_Game_Launcher
             }
         }
         //Cancel button clicked, sets the DialogResult to Cancel
-        private void cancelButton_Click(object sender, EventArgs e)
+        private void CancelButton_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             Close();
         }
         //Accept button clicked, sets the DialogResult to OK
-        private void acceptButton_Click(object sender, EventArgs e)
+        private void AcceptButton_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.OK;
             Close();
