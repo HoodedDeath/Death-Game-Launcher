@@ -33,6 +33,9 @@ namespace Death_Game_Launcher
 
         //The thread worker class used to scan for Steam games
         ScanThreadWorker worker;
+
+        Thread loadingThread;
+
         public Form1()
         {
             InitializeComponent();
@@ -40,7 +43,8 @@ namespace Death_Game_Launcher
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
                 //Show loading animation
-                _loadingForm.Show();
+                loadingThread = new Thread(new ThreadStart(TW));
+                loadingThread.Start();
                 //Used to tell other methods to scan for Steam games after certain events
                 _scannedSteam = true;
                 //Set the ThreadWorker to a new instance with the correct Event Handler
@@ -77,7 +81,8 @@ namespace Death_Game_Launcher
             //Calls ListGames to list out all the games found
             ListGames(_gamesList.ToArray());
             //Close the loading animation, if it was shown at all
-            _loadingForm.Close();
+            if (loadingThread != null)
+                loadingThread.Abort();
             //Resets threadDone to false for the next time the method is called
             threadDone = false;
             //Resets worker to nothing for the next time it's needed
@@ -90,6 +95,11 @@ namespace Death_Game_Launcher
         {
             //Sets threadDone to true so WaitForThreadDone will continue
             threadDone = true;
+        }
+        //Used to show the loading animation Form
+        private void TW()
+        {
+            _loadingForm.ShowDialog();
         }
         //Reads through the user-made changes
         private void ReadGames()
