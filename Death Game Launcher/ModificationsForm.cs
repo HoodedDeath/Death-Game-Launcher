@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,8 +17,8 @@ namespace Death_Game_Launcher
     {
         //Used to get the final list of changes made to games
         public List<Manifest[]> Modifs { get; set; } = new List<Manifest[]>();
-        //Path to the file listing out game changes
-        private readonly string _gameModsFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Mods.cfg");
+        //Registry path
+        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
         //List of game changes initially found
         private List<Manifest[]> _gameMods = new List<Manifest[]>();
 
@@ -31,73 +32,65 @@ namespace Death_Game_Launcher
             //Displays the list of changes
             List();
         }
+
         //Reads through the changes file. Essentially identical to the modification section of Form1.ReadGameConfigs
         private void Read()
         {
             //Modify any games based on the Modifications file
             try
             {
-                //Makes sure all subfolders exist
-                GenSubfolders(_gameModsFile);
-                //Only run if modifications file exists
-                if (File.Exists(_gameModsFile))
+                //Return value from the Modifications registry entry
+                string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
+                //If ret is not empty
+                if (ret != null && ret.Length > 0)
                 {
-                    StreamReader sr = new StreamReader(File.Open(_gameModsFile, FileMode.Open));
-                    //Variable _gameMods is a List containing Manifest arrays, which hold the old details in the first and the new details in the second, so this array does the same on an individual level
-                    Manifest[] m = new Manifest[] { new Manifest(), new Manifest() };
-                    //Used just to tell if we're reading the old details or the new details of the game
+                    //Temporary variable for reading game details
+                    Manifest[] manifests = new Manifest[] { new Manifest(), new Manifest() };
+                    //Just to signal if we're reading the old or new details
                     int i = 0;
-                    //Infinite loop to read file to the end
-                    for (; ; )
+                    foreach (string s in ret)
                     {
-                        string s = sr.ReadLine();
-                        //Breaks at end of file
-                        if (s == null || s == "") break;
                         string[] arr = s.Split('"');
-                        //If this is the end of the details for specific game
-                        if (arr[0] == "}")
+                        switch (arr[0].ToLower())
                         {
-                            //Adds this games details to _gameMods
-                            this._gameMods.Add(m);
-                            //Resets the Manifest array for the next game's details
-                            m = new Manifest[] { new Manifest(), new Manifest() };
-                            //Resets i since we'll be reading the next game's old details first
-                            i = 0;
-                        }
-                        //The semicolon in the file marks when the old details end and the new details begin
-                        else if (arr[0] == ";")
-                        {
-                            //Incriments i since we'll be reading the game's new details next
-                            i++;
-                        }
-                        //As long as this line isn't the start of a game's details
-                        else if (arr[0] != "{")
-                        {
-                            //Switches on the value in the array that will be holding what value it is holding (name, path, steamLaunch, or useShortcut)
-                            //Cases are self-explanatory.
-                            // 'm[i]' is deciding if the value read will be saved in the new details or the old details: 0 for old details, 1 for new details
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    m[i].name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    m[i].path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    m[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    m[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
+                            //Skips over opening bracket
+                            case "{":
+                                break;
+                            //Increments i since ; signals the start of the new details
+                            case ";":
+                                i++;
+                                break;
+                            //Copies the current game's details to _gameMods and resets manifests and i
+                            case "}":
+                                _gameMods.Add(manifests);
+                                manifests = new Manifest[] { new Manifest(), new Manifest() };
+                                i = 0;
+                                break;
+                            //Reads through each line and adds details to manifests, i determining old details vs new details
+                            default:
+                                switch (arr[1].ToLower().Trim())
+                                {
+                                    case "name":
+                                        manifests[i].name = arr[arr.Length - 2];
+                                        break;
+                                    case "path":
+                                        manifests[i].path = arr[arr.Length - 2];
+                                        break;
+                                    case "steam":
+                                        manifests[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "shortcut":
+                                        manifests[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                }
+                                break;
                         }
                     }
-                    sr.Close();
-                    sr.Dispose();
                 }
             }
             catch (Exception e) { MessageBox.Show("Failed to load modification list:\n" + e.Message); }
+            //Sorts _gameMods alphabetically based on the name given in the new details of each game
+            _gameMods.Sort((x, y) => x[1].name.CompareTo(y[1].name));
         }
         //Used to eliminate duplicate items
         private void EliminateDuplicates()
@@ -158,19 +151,6 @@ namespace Death_Game_Launcher
                 //If there are more than 3 items listed, we need a scroll bar. AutoScroll will display it, but this compensates for the extra width by adding 14 pixels to the width of the panel, avoiding the need for the horizontal scroll bar 
                 if (i > 3) panel1.Size = new Size(460, panel1.Size.Height);
             }
-        }
-        //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
-        private void GenSubfolders(string path)
-        {
-            //Splits the path to seperate folders
-            string[] arr = path.Split('\\');
-            //String to keep track of full directory
-            //Starts as the drive letter (example: 'C:'), gets the '\' added before each folder as the loop runs
-            string t = arr[0];
-            //Goes through each folder in the path and makes sure they exist, stops before the file at the end of the path
-            for (int i = 1; i < arr.Length - 1; i++)
-                if (!Directory.Exists(t += ("\\" + arr[i])))
-                    Directory.CreateDirectory(t);
         }
 
         //Called from within the ModifGroup class when the 'Remove' button is clicked

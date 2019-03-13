@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -14,8 +15,8 @@ namespace Death_Game_Launcher
 {
     public partial class ExclusionsForm : Form
     {
-        //Path to file of all games to be excluded from listing
-        private readonly string _gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
+        //Registry path
+        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
         //List of games to be removed from _gamesList
         private List<Manifest> _exclusionsList = new List<Manifest>();
 
@@ -54,63 +55,59 @@ namespace Death_Game_Launcher
         //Reads through the Exclusions file
         private void ReadExclusions()
         {
+
             try
             {
-                //Makes sure all subfolders exist
-                GenSubfolders(_gameExclusionFile);
-                //Only runs if exclusion file exists
-                if (File.Exists(_gameExclusionFile))
+                //Return value from the Exclusions registry entry
+                string[] ret = (string[])Registry.GetValue(regpath, "Exclusions", null);
+                //If the return value is not empty
+                if (ret != null && ret.Length > 0)
                 {
-                    StreamReader sr = new StreamReader(File.Open(_gameExclusionFile, FileMode.Open));
-                    //Used for storing data of the current game
-                    Manifest ma = new Manifest();
-                    //Infinite loop to read file to the end
-                    for (; ; )
+                    //Temporary variable to hold current game's details
+                    Manifest manifest = new Manifest();
+                    //Loops through each string in the return value
+                    foreach (string s in ret)
                     {
-                        string s = sr.ReadLine();
-                        //Breaks at end of file
-                        if (s == null || s == "") break;
                         string[] arr = s.Split('"');
-                        //If the line read is the end of the current game's details
-                        if (arr[0].Trim() == "}")
+                        switch (arr[0].Trim())
                         {
-                            //Save game details to _exclusionList
-                            _exclusionsList.Add(ma);
-                            //Reset the Manifest for next game
-                            ma = new Manifest();
-                        }
-                        //As long as the line read is not the beginning of a game's details
-                        else if (arr[0].Trim() != "{")
-                        {
-                            //Switches on the value in the array that will be holding what value it is holding (name, path, steamLaunch, or useShortcut)
-                            //Cases are self-explanatory.
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    ma.name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    ma.path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
+                            //Skips over opening bracket
+                            case "{":
+                                break;
+                            //Copies the current game's details to _exclusionsList and resets manifest
+                            case "}":
+                                _exclusionsList.Add(manifest);
+                                manifest = new Manifest();
+                                break;
+                            //Reads through each line for details for manifest
+                            default:
+                                switch (arr[1].ToLower().Trim())
+                                {
+                                    case "name":
+                                        manifest.name = arr[arr.Length - 2];
+                                        break;
+                                    case "path":
+                                        manifest.path = arr[arr.Length - 2];
+                                        break;
+                                    case "steam":
+                                        manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "shortcut":
+                                        manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                }
+                                break;
                         }
                     }
-                    sr.Close();
-                    sr.Dispose();
                 }
-                //Sorts the List of exclusions
-                this._exclusionsList.Sort((x, y) => x.name.CompareTo(y.name));
             }
             catch (Exception e)
             {
                 MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
             }
+
+            //Sorts the List of exclusions
+            this._exclusionsList.Sort((x, y) => x.name.CompareTo(y.name));
         }
 
         //Saves the exclusions to the Exclusions file
@@ -118,19 +115,15 @@ namespace Death_Game_Launcher
         {
             try
             {
-                //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
-                GenSubfolders(_gameExclusionFile);
-                //Used to avoid the process of checking what games are already listed in the file by removing the file
-                if (File.Exists(_gameExclusionFile)) File.Delete(_gameExclusionFile);
-                //Creates file to store list of excluded Steam games
-                StreamWriter sw = new StreamWriter(File.Open(_gameExclusionFile, FileMode.OpenOrCreate));
-                //Loops through all games listed
+                //String List to be saved to the registry
+                List<string> list = new List<string>();
+                //Loops through each CheckBox in the Panel
                 foreach (CheckBox c in panel1.Controls)
                 {
-                    //Matching game Manifest
+                    //Temporary variable for comparing values
                     Manifest m = new Manifest();
-                    //Finds the Manifest that matches the current game being checked
-                    foreach (Manifest ma in this._exclusionsList)
+                    //Search for a Manifest whose name matches the current CheckBox
+                    foreach (Manifest ma in _exclusionsList)
                     {
                         if (ma.name == c.Text)
                         {
@@ -138,39 +131,24 @@ namespace Death_Game_Launcher
                             break;
                         }
                     }
-                    //Only acts on the games that launch through Steam
-                    if (m.steamLaunch && c.Checked)
+                    //If m is not empty, it is a Steam launch, and its CheckBox is checked, add the details to list
+                    if (m != new Manifest() && m.steamLaunch && c.Checked)
                     {
-                        //Writes details of game in the file, self explanatory
-                        sw.WriteLine("{");
-                        sw.WriteLine("\t\"name\":\"{0}\"", m.name);
-                        sw.WriteLine("\t\"path\":\"{0}\"", m.path);
-                        sw.WriteLine("\t\"steam\":\"{0}\"", m.steamLaunch);
-                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m.useShortcut);
-                        sw.WriteLine("}");
+                        list.Add("{");
+                        list.Add("\t\"name\":\"" + m.name + "\"");
+                        list.Add("\t\"path\":\"" + m.path + "\"");
+                        list.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
+                        list.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
+                        list.Add("}");
                     }
                 }
-                sw.Close();
-                sw.Dispose();
+                //Converts list to an array and saves it to the registry
+                Registry.SetValue(regpath, "Exclusions", list.ToArray());
             }
             catch (Exception e)
             {
                 MessageBox.Show("Failed to save excluded games:\n" + e.Message);
             }
-        }
-
-        //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
-        private void GenSubfolders(string path)
-        {
-            //Splits the path to seperate folders
-            string[] arr = path.Split('\\');
-            //String to keep track of full directory
-            //Starts as the drive letter (example: 'C:'), gets the '\' added before each folder as the loop runs
-            string t = arr[0];
-            //Goes through each folder in the path and makes sure they exist, stops before the file at the end of the path
-            for (int i = 1; i < arr.Length - 1; i++)
-                if (!Directory.Exists(t += ("\\" + arr[i])))
-                    Directory.CreateDirectory(t);
         }
 
         //When the user presses a key
