@@ -28,118 +28,116 @@ namespace Death_Game_Launcher
         private List<Manifest[]> _gameMods = new List<Manifest[]>();
         //Form that just displays a loading circle animation, used while scanning for games
         private LoadingForm _loadingForm = new LoadingForm();
-        //Path to file of all executable-launch games added by user
-        private readonly string _gameInclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Inclusions.cfg");
-        //Path to file of all games to be excluded from listing
-        private readonly string _gameExclusionFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Exclusions.cfg");
-        //Path to file of all modifications to games in listing
-        private readonly string _gameModsFile = Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "DLG"), "Mods.cfg");
-
         //Registry path to application settings
         private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
 
-
+        //The thread worker class used to scan for Steam games
+        ScanThreadWorker worker;
         public Form1()
         {
-            //Check if Registry entries exist
-            try
-            {
-                //To be deleted
-                /*if (Registry.GetValue(regpath, "ExistTest", null) == null)
-                {
-                    //When the Registry does not exist
-                    Registry.SetValue(regpath, "ExistTest", 1, RegistryValueKind.DWord);
-                }*/
-                if (Registry.GetValue(regpath, "Inclusions", null) == null)
-                    Registry.SetValue(regpath, "Inclusions", new string[0], RegistryValueKind.MultiString);
-                if (Registry.GetValue(regpath, "Exclusions", null) == null)
-                    Registry.SetValue(regpath, "Exclusions", new string[0], RegistryValueKind.MultiString);
-                if (Registry.GetValue(regpath, "Modifications", null) == null)
-                    Registry.SetValue(regpath, "Modifications", new string[0], RegistryValueKind.MultiString);
-
-                //MessageBox.Show((string)Registry.GetValue(regpath, "Inclusions", "FAIL"));
-                /*string s = "";
-                foreach (string a in (string[])Registry.GetValue(regpath, "Inclusions", null))
-                    s += (a + "\n");
-                MessageBox.Show(s);*/
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to checked Registry\n" + ex.Message);
-            }
-            //
-
-            Thread thread = new Thread(new ThreadStart(ThreaderStart));
             InitializeComponent();
+            //If the user wants to scan for Steam games
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                this._scannedSteam = true;
+                //Show loading animation
+                _loadingForm.Show();
+                //Used to tell other methods to scan for Steam games after certain events
+                _scannedSteam = true;
+                //Set the ThreadWorker to a new instance with the correct Event Handler
+                worker = new ScanThreadWorker();
+                worker.ThreadDone += HandleThreadDone;
+                //New Thread to scan for Steam games
+                Thread thread = new Thread(worker.Run)
+                { Name = "SteamScanThread" };
+                //Start scanning
                 thread.Start();
-                _gamesList.AddRange(Scan());
             }
-            //Reads the three config files to make needed changes
-            ReadGameConfigs();
-            //Called to display games
+            //Otherwise just set threadDone to true, since HandleThreadDone won't be triggered
+            else
+                threadDone = true;
+            //Call method to list out the games
+            WaitForThreadDone();
+        }
+        //Called to list out the found games
+        private void WaitForThreadDone()
+        {
+            //Waits until the scanning Thread is done (if it ran at all)
+            while (!threadDone) { }
+            //Array to hold the games found by the scanning Thread
+            Manifest[] manifests = new Manifest[0];
+            //If the ThreadWorker was set (essentially if the scanning thread was ran)
+            if (worker != null)
+                //Copy the array the ThreadWorker got into manifests
+                manifests = worker.Value;
+            //If there are any Steam games found, add them to _gamesList
+            if (manifests != null && manifests.Length > 0)
+                _gamesList.AddRange(manifests);
+            //Calls ReadGames to add local games, remove exclusions, and makes changes to games
+            ReadGames();
+            //Calls ListGames to list out all the games found
             ListGames(_gamesList.ToArray());
-            thread.Abort();
+            //Close the loading animation, if it was shown at all
+            _loadingForm.Close();
+            //Resets threadDone to false for the next time the method is called
+            threadDone = false;
+            //Resets worker to nothing for the next time it's needed
+            worker = null;
         }
-        private void ThreaderStart()
+        //Whether or not WaitForThreadDone should wait or continue
+        private bool threadDone = false;
+        //EventHnadler for when the scanning thread finishes
+        public void HandleThreadDone(object sender, EventArgs e)
         {
-            //Loading animation used while scanning
-            _loadingForm.ShowDialog();
+            //Sets threadDone to true so WaitForThreadDone will continue
+            threadDone = true;
         }
-        //Reads through the three config files for user-made changes
-        private void ReadGameConfigs()
+        //Reads through the user-made changes
+        private void ReadGames()
         {
+            //Inclusions
             try
             {
-                //Makes sure all subfolders exist
-                GenSubfolders(_gameInclusionFile);
-                //Only runs if inclusions file exists
-                if (File.Exists(_gameInclusionFile))
+                //Return value for the Inclusions entry
+                string[] ret = (string[])Registry.GetValue(regpath, "Inclusions", null);
+                //If there is a value found
+                if (ret != null && ret.Length > 0)
                 {
-                    StreamReader sr = new StreamReader(File.Open(_gameInclusionFile, FileMode.Open));
-                    //Used for storing data while reading file
-                    Manifest ma = new Manifest();
-                    //Infinite loop to read through file one line at a time
-                    for (; ; )
+                    //Manifest to be added to _gamesList
+                    Manifest manifest = new Manifest();
+                    //Run through each line from the return value
+                    foreach (string s in ret)
                     {
-                        string s = sr.ReadLine();
-                        //Breaks at end of file
-                        if (s == null || s == "") break;
                         string[] arr = s.Split('"');
-                        //If you have read to the end of the details for one specific game
-                        if (arr[0].Trim() == "}")
+                        switch (arr[0].Trim())
                         {
-                            //Save game to _gamesList
-                            _gamesList.Add(ma);
-                            //Resent the Manifest for next game
-                            ma = new Manifest();
-                        }
-                        //As long as this isn't denoting the start of a game's details
-                        else if (arr[0].Trim() != "{")
-                        {
-                            //Switches on the value in the array that will be holding what value it is holding (name, path, steamLaunch, or useShortcut)
-                            //Cases are self-explanatory.
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    ma.name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    ma.path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
+                            //Skips the opening bracket
+                            case "{":
+                                break;
+                            //At each closing bracket, save the currently found game to _gamesList and reset manifest to a blank manifest
+                            case "}":
+                                this._gamesList.Add(manifest);
+                                manifest = new Manifest();
+                                break;
+                            //Sets the values for the manifest
+                            default:
+                                switch (arr[1].ToLower().Trim())
+                                {
+                                    case "name":
+                                        manifest.name = arr[arr.Length - 2];
+                                        break;
+                                    case "path":
+                                        manifest.path = arr[arr.Length - 2];
+                                        break;
+                                    case "steam":
+                                        manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "shortcut":
+                                        manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                }
+                                break;
                         }
                     }
-                    sr.Close();
-                    sr.Dispose();
                 }
             }
             catch (Exception e)
@@ -156,64 +154,54 @@ namespace Death_Game_Launcher
             {
                 //Makes sure modifications List is empty (avoids duplications caused by loading the modifications Form and exiting by saving even though there were no changes made)
                 this._gameMods = new List<Manifest[]>();
-                //Makes sure all subfolders exist
-                GenSubfolders(_gameModsFile);
-                //Only run if modifications file exists
-                if (File.Exists(_gameModsFile))
+                //Return value from the Modifications entry
+                string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
+                //If the return value wasn't empty
+                if (ret != null && ret.Length > 0)
                 {
-                    StreamReader sr = new StreamReader(File.Open(_gameModsFile, FileMode.Open));
-                    //Variable _gameMods is a List containing Manifest arrays, which hold the old details in the first and the new details in the second, so this array does the same on an individual level
-                    Manifest[] m = new Manifest[] { new Manifest(), new Manifest() };
+                    //Temporary variable for reading in the modifications
+                    Manifest[] manifests = new Manifest[] { new Manifest(), new Manifest() };
                     //Used just to tell if we're reading the old details or the new details of the game
                     int i = 0;
-                    //Infinite loop to read file to the end
-                    for (; ; )
+                    //Loops through each line of the array returned from the registry
+                    foreach (string s in ret)
                     {
-                        string s = sr.ReadLine();
-                        //Breaks at end of file
-                        if (s == null || s == "") break;
                         string[] arr = s.Split('"');
-                        //If this is the end of the details for specific game
-                        if (arr[0] == "}")
+                        switch (arr[0].Trim())
                         {
-                            //Adds this games details to _gameMods
-                            this._gameMods.Add(m);
-                            //Resets the Manifest array for the next game's details
-                            m = new Manifest[] { new Manifest(), new Manifest() };
-                            //Resets i since we'll be reading the next game's old details first
-                            i = 0;
-                        }
-                        //The semicolon in the file marks when the old details end and the new details begin
-                        else if (arr[0] == ";")
-                        {
-                            //Incriments i since we'll be reading the game's new details next
-                            i++;
-                        }
-                        //As long as this line isn't the start of a game's details
-                        else if (arr[0] != "{")
-                        {
-                            //Switches on the value in the array that will be holding what value it is holding (name, path, steamLaunch, or useShortcut)
-                            //Cases are self-explanatory.
-                            // 'm[i]' is deciding if the value read will be saved in the new details or the old details: 0 for old details, 1 for new details
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    m[i].name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    m[i].path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    m[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    m[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
+                            //Skips past opening bracket
+                            case "{":
+                                break;
+                            //Increases i since ; signals these are the new details for the game
+                            case ";":
+                                i++;
+                                break;
+                            //Adds the current game to the list of modifications and resets manifests and i
+                            case "}":
+                                this._gameMods.Add(manifests);
+                                manifests = new Manifest[] { new Manifest(), new Manifest() };
+                                i = 0;
+                                break;
+                            //Reads through the lines of the current game's details, i determines if the line is old or new details
+                            default:
+                                switch (arr[1].ToLower().Trim())
+                                {
+                                    case "name":
+                                        manifests[i].name = arr[arr.Length - 2];
+                                        break;
+                                    case "path":
+                                        manifests[i].path = arr[arr.Length - 2];
+                                        break;
+                                    case "steam":
+                                        manifests[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "shortcut":
+                                        manifests[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                }
+                                break;
                         }
                     }
-                    sr.Close();
-                    sr.Dispose();
                     //Loops through _gameMods to modify the games listing
                     foreach (Manifest[] ma in this._gameMods.ToArray())
                     {
@@ -245,58 +233,51 @@ namespace Death_Game_Launcher
             {
                 //Clears the exclusions List before reading anything, avoiding duplication in the case of opening the Exclusions Form and saving it without changing anything
                 this._exclusionsList = new List<Manifest>();
-                //Makes sure all subfolders exist
-                GenSubfolders(_gameExclusionFile);
-                //Only runs if exclusion file exists
-                if (File.Exists(_gameExclusionFile))
+                //Return value from the Exclusions entry
+                string[] ret = (string[])Registry.GetValue(regpath, "Exclusions", null);
+                //Temporary variable for reading in excluded games
+                Manifest manifest = new Manifest();
+                //If the return value is not empty
+                if (ret != null && ret.Length > 0)
                 {
-                    StreamReader sr = new StreamReader(File.Open(_gameExclusionFile, FileMode.Open));
-                    //Used for storing data of the current game
-                    Manifest ma = new Manifest();
-                    //Infinite loop to read file to the end
-                    for (; ; )
+                    foreach (string s in ret)
                     {
-                        string s = sr.ReadLine();
-                        //Breaks at end of file
-                        if (s == null || s == "") break;
                         string[] arr = s.Split('"');
-                        //If the line read is the end of the current game's details
-                        if (arr[0].Trim() == "}")
+                        switch (arr[0].Trim())
                         {
-                            //Save game details to _exclusionList
-                            _exclusionsList.Add(ma);
-                            //Reset the Manifest for next game
-                            ma = new Manifest();
-                        }
-                        //As long as the line read is not the beginning of a game's details
-                        else if (arr[0].Trim() != "{")
-                        {
-                            //Switches on the value in the array that will be holding what value it is holding (name, path, steamLaunch, or useShortcut)
-                            //Cases are self-explanatory.
-                            switch (arr[1].ToLower().Trim())
-                            {
-                                case "name":
-                                    ma.name = arr[arr.Length - 2];
-                                    break;
-                                case "path":
-                                    ma.path = arr[arr.Length - 2];
-                                    break;
-                                case "steam":
-                                    ma.steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                                case "shortcut":
-                                    ma.useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                    break;
-                            }
+                            //Skips over the opening bracket
+                            case "{":
+                                break;
+                            //Copy the current details to _exclusionsList and reset manifest
+                            case "}":
+                                this._exclusionsList.Add(manifest);
+                                manifest = new Manifest();
+                                break;
+                            //Reads through the lines of the game details
+                            default:
+                                switch (arr[1].ToLower().Trim())
+                                {
+                                    case "name":
+                                        manifest.name = arr[arr.Length - 2];
+                                        break;
+                                    case "path":
+                                        manifest.path = arr[arr.Length - 2];
+                                        break;
+                                    case "steam":
+                                        manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "shortcut":
+                                        manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                }
+                                break;
                         }
                     }
-                    sr.Close();
-                    sr.Dispose();
-                }
-                //Loops through each game in the exclusions and removes it from the list of games
-                foreach (Manifest m in _exclusionsList.ToArray())
-                {
-                    _gamesList.Remove(m);
+                    //Loops through each game in the exclusions and removes it from the list of games
+                    foreach (Manifest m in _exclusionsList.ToArray())
+                    {
+                        _gamesList.Remove(m);
+                    }
                 }
             }
             catch (Exception e)
@@ -343,29 +324,23 @@ namespace Death_Game_Launcher
         {
             try
             {
-                //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
-                GenSubfolders(_gameInclusionFile);
-                //Used to avoid the process of checking what games are already listed in the file by removing the file
-                if (File.Exists(_gameInclusionFile)) File.Delete(_gameInclusionFile);
-                //Creates file to store list of local launch games
-                StreamWriter sw = new StreamWriter(File.Open(_gameInclusionFile, FileMode.OpenOrCreate));
-                //Loops through all games listed
+                //String List to be saved in the registry
+                List<string> games = new List<string>();
+                //Loops through each local launch game and adds its details to the games List
                 foreach (Manifest m in this._gamesList)
                 {
-                    //Only acts on the games that do not launch through Steam
                     if (!m.steamLaunch)
                     {
-                        //Writes details of game in the file, self explanatory
-                        sw.WriteLine("{");
-                        sw.WriteLine("\t\"name\":\"{0}\"", m.name);
-                        sw.WriteLine("\t\"path\":\"{0}\"", m.path);
-                        sw.WriteLine("\t\"steam\":\"{0}\"", m.steamLaunch);
-                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m.useShortcut);
-                        sw.WriteLine("}");
+                        games.Add("{");
+                        games.Add("\t\"name\":\"" + m.name + "\"");
+                        games.Add("\t\"path\":\"" + m.path + "\"");
+                        games.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
+                        games.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
+                        games.Add("}");
                     }
                 }
-                sw.Close();
-                sw.Dispose();
+                //Converts the games List to an array and saves it to the registry
+                Registry.SetValue(regpath, "Inclusions", games.ToArray());
             }
             catch (Exception e)
             {
@@ -377,29 +352,23 @@ namespace Death_Game_Launcher
         {
             try
             {
-                //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
-                GenSubfolders(_gameExclusionFile);
-                //Used to avoid the process of checking what games are already listed in the file by removing the file
-                if (File.Exists(_gameExclusionFile)) File.Delete(_gameExclusionFile);
-                //Creates file to store list of excluded Steam games
-                StreamWriter sw = new StreamWriter(File.Open(_gameExclusionFile, FileMode.OpenOrCreate));
-                //Loops through all games listed
+                //String List to be saved in the registry
+                List<string> games = new List<string>();
+                //Loops through each excluded game and adds the details to the games List if it is a Steam launch game
                 foreach (Manifest m in this._exclusionsList)
                 {
-                    //Only acts on the games that launch through Steam
                     if (m.steamLaunch)
                     {
-                        //Writes details of game in the file, self explanatory
-                        sw.WriteLine("{");
-                        sw.WriteLine("\t\"name\":\"{0}\"", m.name);
-                        sw.WriteLine("\t\"path\":\"{0}\"", m.path);
-                        sw.WriteLine("\t\"steam\":\"{0}\"", m.steamLaunch);
-                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m.useShortcut);
-                        sw.WriteLine("}");
+                        games.Add("{");
+                        games.Add("\t\"name\":\"" + m.name + "\"");
+                        games.Add("\t\"path\":\"" + m.path + "\"");
+                        games.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
+                        games.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
+                        games.Add("}");
                     }
                 }
-                sw.Close();
-                sw.Dispose();
+                //Converts games to an array and saves it to the registry
+                Registry.SetValue(regpath, "Exclusions", games.ToArray());
             }
             catch (Exception e)
             {
@@ -414,35 +383,27 @@ namespace Death_Game_Launcher
             this._gameMods = ElimChains(this._gameMods);
             try
             {
-                //Makes sure all subfolders exist to help prevent the StreamWriter from throwing an exception
-                GenSubfolders(_gameModsFile);
-                //Used to avoid the process of checking what games are already listed in the file by removing the file
-                if (File.Exists(_gameModsFile)) File.Delete(_gameModsFile);
-                //Creates file to store list of detail modifications
-                StreamWriter sw = new StreamWriter(File.Open(_gameModsFile, FileMode.OpenOrCreate));
-                //Loops through games stored int the list of modifications
-                foreach (Manifest[] m in _gameMods)
+                //String List to be saved in the registry
+                List<string> games = new List<string>();
+                //Loops through each game change and adds the details to games if the games is a Steam launch either before or after changes
+                foreach (Manifest[] m in this._gameMods)
                 {
-                    //If the game was a Steam launch either before or after the modification (avoiding writing local-launch games to this file, as their changes will be written to the inclusions file)
                     if (m[0].steamLaunch || m[1].steamLaunch)
                     {
-                        //Writes details of modification
-                        //m[0] is the old details, m[1] is the new details
-                        sw.WriteLine("{");
-                        sw.WriteLine("\t\"name\":\"{0}\"", m[0].name);
-                        sw.WriteLine("\t\"path\":\"{0}\"", m[0].path);
-                        sw.WriteLine("\t\"steam\":\"{0}\"", m[0].steamLaunch);
-                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m[0].useShortcut);
-                        sw.WriteLine(";");
-                        sw.WriteLine("\t\"name\":\"{0}\"", m[1].name);
-                        sw.WriteLine("\t\"path\":\"{0}\"", m[1].path);
-                        sw.WriteLine("\t\"steam\":\"{0}\"", m[1].steamLaunch);
-                        sw.WriteLine("\t\"shortcut\":\"{0}\"", m[1].useShortcut);
-                        sw.WriteLine("}");
+                        games.Add("{");
+                        games.Add("\t\"name\":\"" + m[0].name + "\"");
+                        games.Add("\t\"path\":\"" + m[0].path + "\"");
+                        games.Add("\t\"steam\":\"" + m[0].steamLaunch + "\"");
+                        games.Add("\t\"shortcut\":\"" + m[0].useShortcut + "\"");
+                        games.Add(";");
+                        games.Add("\t\"name\":\"" + m[1].name + "\"");
+                        games.Add("\t\"path\":\"" + m[1].path + "\"");
+                        games.Add("\t\"steam\":\"" + m[1].steamLaunch + "\"");
+                        games.Add("\t\"shortcut\":\"" + m[1].useShortcut + "\"");
+                        games.Add("}");
                     }
                 }
-                sw.Close();
-                sw.Dispose();
+                Registry.SetValue(regpath, "Modifications", games.ToArray());
             }
             catch (Exception e) { MessageBox.Show("Failed to save edits to games in listing:\n" + e.Message); }
         }
@@ -484,179 +445,6 @@ namespace Death_Game_Launcher
                 return ElimChains(r);
             else
                 return r;
-        }
-        //Makes sure all folders leading to the given path exist to avoid System.IO.DirectoryNotFoundException
-        private void GenSubfolders(string path)
-        {
-            //Splits the path to seperate folders
-            string[] arr = path.Split('\\');
-            //String to keep track of full directory
-            //Starts as the drive letter (example: 'C:'), gets the '\' added before each folder as the loop runs
-            string t = arr[0];
-            //Goes through each folder in the path and makes sure they exist, stops before the file at the end of the path
-            for (int i = 1; i < arr.Length - 1; i++)
-                if (!Directory.Exists(t += ("\\" + arr[i])))
-                    Directory.CreateDirectory(t);
-        }
-
-        //App Manifest Data
-        public struct Manifest
-        {
-            public string name;
-            public string path;
-            public bool steamLaunch;
-            public bool useShortcut;
-
-            //Easy way to print out details of game Manifest, mostly for debugging/testing
-            public override string ToString()
-            {
-                return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
-            }
-            //
-            public static bool operator ==(Manifest a, Manifest b)
-            {
-                return a.name == b.name &&
-                    a.path == b.path &&
-                    a.steamLaunch == b.steamLaunch &&
-                    a.useShortcut == b.useShortcut;
-            }
-            public static bool operator !=(Manifest a, Manifest b)
-            {
-                return a.name != b.name ||
-                    a.path != b.path ||
-                    a.steamLaunch != b.steamLaunch ||
-                    a.useShortcut != b.useShortcut;
-            }
-            public override int GetHashCode()
-            {
-                var hashCode = -1955659842;
-                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(name);
-                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(path);
-                hashCode = hashCode * -1521134295 + steamLaunch.GetHashCode();
-                hashCode = hashCode * -1521134295 + useShortcut.GetHashCode();
-                return hashCode;
-            }
-            public override bool Equals(object obj)
-            {
-                if (!(obj is Manifest))
-                {
-                    return false;
-                }
-
-                var manifest = (Manifest)obj;
-                return name == manifest.name &&
-                       path == manifest.path &&
-                       steamLaunch == manifest.steamLaunch &&
-                       useShortcut == manifest.useShortcut;
-            }
-        }
-        //Scans paths for games
-        private Manifest[] Scan()
-        {
-            //List of games to be returned
-            List<Manifest> manifests = new List<Manifest>();
-            //Gets the value that is held in the Registry to find out where Steam is located
-            object ret = Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Valve\\Steam", "SteamPath", "NO VAL");
-            //If Steam install path is not found in registry, the user will have to input the path manually
-            if (ret == null || (string)ret == "NO VAL") { MessageBox.Show("Steam is not installed as expected, unable to continue."); return null; }
-            //Scan default games dir
-            string defPath = (string)ret + "\\steamapps";
-            //Gets full path to each Steam app manifest file in the default game directory
-            string[] sa = Directory.GetFiles(defPath, "*.acf");
-            //As long as there is at least one file in that directory
-            if (sa.Length > 0)
-            {
-                //Loops through all found app manifest files
-                foreach (string s in sa)
-                {
-                    try
-                    {
-                        //Used to store data of the current game
-                        Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(s));
-                        //Padding to reach the Steam id of the game
-                        sr.ReadLine(); sr.ReadLine();
-                        string[] t = sr.ReadLine().Split('"');
-                        //Saves the Steam id of the game
-                        manifest.path = t[t.Length - 2];
-                        //Padding to reach the name of the game
-                        sr.ReadLine();
-                        t = null; t = sr.ReadLine().Split('"');
-                        //Saves the name of the game
-                        manifest.name = t[t.Length - 2];
-                        manifest.steamLaunch = true;
-                        sr.Close();
-                        sr.Dispose();
-                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
-                        manifest.useShortcut = false;
-                        //Adds the game to the list of games to be returned if it is not already in the list
-                        //Should always evaluate true
-                        if (!manifests.Contains(manifest)) manifests.Add(manifest);
-                    }
-                    catch (Exception e) { MessageBox.Show("Exception while scanning Steam default directory:\n" + e.Message); }
-                }
-            }
-            //Scan user created game dirs
-            try
-            {
-                //Path to Steam's file containing paths to user-created library folders
-                string libraryFoldersFile = (string)ret + "\\steamapps\\libraryfolders.vdf";
-                //List of user-created library folders to be scanned
-                List<string> libraryFolders = new List<string>();
-                StreamReader streamReader = new StreamReader(File.OpenRead(libraryFoldersFile));
-                //Padding to reach the first listed library folder
-                streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine();
-                //Infinite loop to read to end of file
-                for (; ; )
-                {
-                    string temp = streamReader.ReadLine();
-                    //Breaks at end of file
-                    if (temp == null || temp == "" || temp == "}") break;
-                    string[] t = temp.Split('"');
-                    //Saves the path of the library folder
-                    libraryFolders.Add(t[t.Length - 2]);
-                }
-                streamReader.Close();
-                streamReader.Dispose();
-                //Loops through each user-created library folder
-                foreach (string folder in libraryFolders.ToArray<string>())
-                {
-                    //Directory where the Steam app manifest files are
-                    string path = folder + "\\steamapps";
-                    //Gets all app manifest files in the directory
-                    string[] files = Directory.GetFiles(path, "*.acf");
-                    //Loops through each file to read each game
-                    foreach (string file in files)
-                    {
-                        //Used to hold data for the game
-                        Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(file));
-                        //Padding to reach the Steam application id
-                        sr.ReadLine();sr.ReadLine();
-                        string[] t = sr.ReadLine().Split('"');
-                        //Saves app id
-                        manifest.path = t[t.Length - 2];
-                        //Padding to reach app name
-                        sr.ReadLine();
-                        t = null; t = sr.ReadLine().Split('"');
-                        //Saves name
-                        manifest.name = t[t.Length - 2];
-                        manifest.steamLaunch = true;
-                        sr.Close();
-                        sr.Dispose();
-                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
-                        manifest.useShortcut = false;
-                        //Adds the game to the list of games to be returned if it is not already in the list
-                        //Should always evaluate true
-                        if (!manifests.Contains(manifest)) manifests.Add(manifest);
-                    }
-                }
-            }
-            catch (Exception e) { MessageBox.Show("Failed loading games from user-created Steam library folders:\n" + e.Message); }
-            //Sorts the found Games in alphabetical order
-            manifests.Sort((x, y) => x.name.CompareTo(y.name));
-            //Returns the list of all found games
-            return manifests.ToArray<Manifest>();
         }
 
         //Default height value used to arrange the game listings in the panel
@@ -747,10 +535,10 @@ namespace Death_Game_Launcher
         }
 
         //Used by 'Grouping' class for Deleting games
-        public void RemoveGame(Manifest manifest /*string name, string path, bool steam, bool shortcut*/)
+        public void RemoveGame(Manifest manifest)
         {
             //Generates the manifest for the game to be deleted
-            Manifest torem = manifest; // new Manifest { name = name, path = path, steamLaunch = steam, useShortcut = shortcut };
+            Manifest torem = manifest;
             //Tries to remove the game from the games list and returns true if successful, false otherwise
             bool found = this._gamesList.Remove(torem);
             //If the game was found and removed
@@ -777,8 +565,6 @@ namespace Death_Game_Launcher
             {
                 //Add the updated information to the games list
                 this._gamesList.Add(newMan);
-                //Add the old and new information to the list of game changes
-                //this._gameMods.Add(new Manifest[] { oldMan, newMan });
 
                 //Compare any changes to the Steam launch setting for the game
                 if (oldMan.steamLaunch && !newMan.steamLaunch)
@@ -786,8 +572,6 @@ namespace Death_Game_Launcher
                     //Was a Steam launch but is now a local launch
                     //Exclude game from Steam game scanning
                     this._exclusionsList.Add(oldMan);
-                    //Add to the game list. Game will be seen as a local launch and saved to the inclusions file upon closing
-                    //this._gamesList.Add(newMan);
                 }
                 else if (oldMan.steamLaunch && newMan.steamLaunch)
                 {
@@ -829,22 +613,25 @@ namespace Death_Game_Launcher
                         this._exclusionsList = new List<Manifest>();
                         //Clears the list of games to prevent duplicates
                         this._gamesList = new List<Manifest>();
-                        //Thread to display loading animation incase of Steam game scanning
-                        Thread thread = new Thread(new ThreadStart(ThreaderStart));
-                        //Did we scan for Steam games when initially launching? If so, scan them again now
-                        if (this._scannedSteam)
+                        //If the user scanned for Steam games on launch
+                        if (_scannedSteam)
                         {
-                            //Displays loading animation while loading
+                            //Show loading animation
+                            _loadingForm = new LoadingForm();
+                            _loadingForm.Show();
+                            //Creates a new ScanThreadWorker and sets its ThreadDone EventHandler
+                            worker = new ScanThreadWorker();
+                            worker.ThreadDone += HandleThreadDone;
+                            //Runs worker in a separate thread to scan for Steam games
+                            Thread thread = new Thread(worker.Run)
+                            { Name = "SteamScanThread-AfterExclusions" };
                             thread.Start();
-                            //Scans for Steam games
-                            this._gamesList.AddRange(Scan());
                         }
-                        //Reads through the inclusions, exclusions, and changes files 
-                        ReadGameConfigs();
-                        //Lists the games
-                        ListGames(this._gamesList.ToArray());
-                        //Aborts the loading animation thread. If it was never started, this line won't effect anything
-                        thread.Abort();
+                        //Otherwise just set threadDone to true so WaitForThreadDone will continue
+                        else
+                            threadDone = true;
+                        //Call WaitForThreadDone to display games
+                        WaitForThreadDone();
                     }
                 }
             }
@@ -875,22 +662,26 @@ namespace Death_Game_Launcher
                     this._gameMods = form.Modifs;
                     //Saves the list of changes
                     AddGameModifications();
-                    //Thread to display loading animation incase of Steam game scanning
-                    Thread thread = new Thread(new ThreadStart(ThreaderStart));
-                    //Did we scan for Steam games when initially launching? If so, scan them again now
-                    if (this._scannedSteam)
+                    //If the user wanted Steam games scanned for on launch
+                    if (_scannedSteam)
                     {
-                        //Displays loading animation while loading
+                        //Show loading animation
+                        _loadingForm = new LoadingForm();
+                        _loadingForm.Show();
+                        //Create a new instance of of the ScanThreadWorker
+                        worker = new ScanThreadWorker();
+                        //Sets the worker's ThreadDone EventHandler to HandleThreadDone
+                        worker.ThreadDone += HandleThreadDone;
+                        //Creates a new Thread from worker and runs it to scan for Steam games
+                        Thread thread = new Thread(worker.Run)
+                        { Name = "SteamScanThread-AfterExclusions" };
                         thread.Start();
-                        //Scans for Steam games
-                        this._gamesList.AddRange(Scan());
                     }
-                    //Reads through the inclusions, exclusions, and changes files 
-                    ReadGameConfigs();
-                    //Lists the games
-                    ListGames(this._gamesList.ToArray());
-                    //Aborts the loading animation thread. If it was never started, this line won't effect anything
-                    thread.Abort();
+                    //Otherwise just set threadDone to true, so WaitForThreadDone will continue
+                    else
+                        threadDone = true;
+                    //Calls WaitForThreadDone to display games
+                    WaitForThreadDone();
                 }
             }
         }
@@ -910,22 +701,14 @@ namespace Death_Game_Launcher
 
     public class Grouping : GroupBox
     {
-        //private GroupBox groupBox = new GroupBox();
-        private PictureBox iconBox; // = new PictureBox();
-        private PictureBox settingsBox; // = new PictureBox();
-        private PictureBox launchBox; // = new PictureBox();
-        //Path can either be the Steam launch id or the path to the executable file
-        /*private string path = "";
-        private string name = "";
-        private bool isSteamLaunch = false;
-        private bool useShortcut = false;*/
-        //Used for making update and deletion calls
-        //public Form1 parent;
+        private PictureBox iconBox;
+        private PictureBox settingsBox;
+        private PictureBox launchBox;
 
         //New Declaration
-        public Form1.Manifest Manifest { get; set; }
+        public Manifest Manifest { get; set; }
         private readonly Form1 _parent;
-        public Grouping(Form1.Manifest manifest, Form1 parent)
+        public Grouping(Manifest manifest, Form1 parent)
         {
             this._parent = parent;
             this.Manifest = manifest;
@@ -1124,9 +907,9 @@ namespace Death_Game_Launcher
                 if (form.DialogResult == DialogResult.OK)
                 {
                     //Old details
-                    Form1.Manifest oldMan = this.Manifest;
+                    Manifest oldMan = this.Manifest;
                     //Updated details
-                    Form1.Manifest newMan = new Form1.Manifest
+                    Manifest newMan = new Manifest
                     {
                         name = form.GameName,
                         path = form.GamePath,
@@ -1155,5 +938,173 @@ namespace Death_Game_Launcher
 
         //Returns the GroupBox control
         //public GroupBox Group { get { return this/*.groupBox*/; } }
+    }
+
+    //App Manifest Data
+    public struct Manifest
+    {
+        public string name;
+        public string path;
+        public bool steamLaunch;
+        public bool useShortcut;
+
+        //Easy way to print out details of game Manifest, mostly for debugging/testing
+        public override string ToString()
+        {
+            return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
+        }
+        //
+        public static bool operator ==(Manifest a, Manifest b)
+        {
+            return a.name == b.name &&
+                a.path == b.path &&
+                a.steamLaunch == b.steamLaunch &&
+                a.useShortcut == b.useShortcut;
+        }
+        public static bool operator !=(Manifest a, Manifest b)
+        {
+            return a.name != b.name ||
+                a.path != b.path ||
+                a.steamLaunch != b.steamLaunch ||
+                a.useShortcut != b.useShortcut;
+        }
+        public override int GetHashCode()
+        {
+            var hashCode = -1955659842;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(name);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(path);
+            hashCode = hashCode * -1521134295 + steamLaunch.GetHashCode();
+            hashCode = hashCode * -1521134295 + useShortcut.GetHashCode();
+            return hashCode;
+        }
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Manifest))
+            {
+                return false;
+            }
+
+            var manifest = (Manifest)obj;
+            return name == manifest.name &&
+                   path == manifest.path &&
+                   steamLaunch == manifest.steamLaunch &&
+                   useShortcut == manifest.useShortcut;
+        }
+    }
+
+    class ScanThreadWorker
+    {
+        public event EventHandler ThreadDone;
+
+        //The return value
+        private List<Manifest> val = new List<Manifest>();
+        //To get return value
+        public Manifest[] Value { get { return val.ToArray(); } }
+        //The method to scan for Steam games
+        public void Run()
+        {
+            //Gets the value that is held in the Registry to find out where Steam is located
+            object ret = Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Valve\\Steam", "SteamPath", "NO VAL");
+            //If Steam install path is not found in registry, the user will have to input the path manually
+            if (ret == null || (string)ret == "NO VAL") { MessageBox.Show("Steam is not installed as expected, unable to continue."); }
+            //Scan default games dir
+            string defPath = (string)ret + "\\steamapps";
+            //Gets full path to each Steam app manifest file in the default game directory
+            string[] sa = Directory.GetFiles(defPath, "*.acf");
+            //As long as there is at least one file in that directory
+            if (sa.Length > 0)
+            {
+                //Loops through all found app manifest files
+                foreach (string s in sa)
+                {
+                    try
+                    {
+                        //Used to store data of the current game
+                        Manifest manifest = new Manifest();
+                        StreamReader sr = new StreamReader(File.OpenRead(s));
+                        //Padding to reach the Steam id of the game
+                        sr.ReadLine(); sr.ReadLine();
+                        string[] t = sr.ReadLine().Split('"');
+                        //Saves the Steam id of the game
+                        manifest.path = t[t.Length - 2];
+                        //Padding to reach the name of the game
+                        sr.ReadLine();
+                        t = null; t = sr.ReadLine().Split('"');
+                        //Saves the name of the game
+                        manifest.name = t[t.Length - 2];
+                        manifest.steamLaunch = true;
+                        sr.Close();
+                        sr.Dispose();
+                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
+                        manifest.useShortcut = false;
+                        //Adds the game to the list of games to be returned if it is not already in the list
+                        //Should always evaluate true
+                        if (!val.Contains(manifest)) val.Add(manifest);
+                    }
+                    catch (Exception e) { MessageBox.Show("Exception while scanning Steam default directory:\n" + e.Message); }
+                }
+            }
+            //Scan user created game dirs
+            try
+            {
+                //Path to Steam's file containing paths to user-created library folders
+                string libraryFoldersFile = (string)ret + "\\steamapps\\libraryfolders.vdf";
+                //List of user-created library folders to be scanned
+                List<string> libraryFolders = new List<string>();
+                StreamReader streamReader = new StreamReader(File.OpenRead(libraryFoldersFile));
+                //Padding to reach the first listed library folder
+                streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine();
+                //Infinite loop to read to end of file
+                for (; ; )
+                {
+                    string temp = streamReader.ReadLine();
+                    //Breaks at end of file
+                    if (temp == null || temp == "" || temp == "}") break;
+                    string[] t = temp.Split('"');
+                    //Saves the path of the library folder
+                    libraryFolders.Add(t[t.Length - 2]);
+                }
+                streamReader.Close();
+                streamReader.Dispose();
+                //Loops through each user-created library folder
+                foreach (string folder in libraryFolders.ToArray<string>())
+                {
+                    //Directory where the Steam app manifest files are
+                    string path = folder + "\\steamapps";
+                    //Gets all app manifest files in the directory
+                    string[] files = Directory.GetFiles(path, "*.acf");
+                    //Loops through each file to read each game
+                    foreach (string file in files)
+                    {
+                        //Used to hold data for the game
+                        Manifest manifest = new Manifest();
+                        StreamReader sr = new StreamReader(File.OpenRead(file));
+                        //Padding to reach the Steam application id
+                        sr.ReadLine(); sr.ReadLine();
+                        string[] t = sr.ReadLine().Split('"');
+                        //Saves app id
+                        manifest.path = t[t.Length - 2];
+                        //Padding to reach app name
+                        sr.ReadLine();
+                        t = null; t = sr.ReadLine().Split('"');
+                        //Saves name
+                        manifest.name = t[t.Length - 2];
+                        manifest.steamLaunch = true;
+                        sr.Close();
+                        sr.Dispose();
+                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
+                        manifest.useShortcut = false;
+                        //Adds the game to the list of games to be returned if it is not already in the list
+                        //Should always evaluate true
+                        if (!val.Contains(manifest)) val.Add(manifest);
+                    }
+                }
+            }
+            catch (Exception e) { MessageBox.Show("Failed loading games from user-created Steam library folders:\n" + e.Message); }
+            //Sorts the found Games in alphabetical order
+            val.Sort((x, y) => x.name.CompareTo(y.name));
+
+            ThreadDone?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

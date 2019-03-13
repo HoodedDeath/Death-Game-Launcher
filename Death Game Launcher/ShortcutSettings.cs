@@ -20,7 +20,7 @@ namespace Death_Game_Launcher
             this.IsSteamLaunch = isSteamLaunch;
             this.UseShortcut = useShortcut;
         }*/
-        public ShortcutSettings(Form1.Manifest manifest)
+        public ShortcutSettings(Manifest manifest)
         {
             InitializeComponent();
             this.GameName = manifest.name;
