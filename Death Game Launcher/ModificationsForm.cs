@@ -147,7 +147,7 @@ namespace Death_Game_Launcher
                 panel1.Controls.Add(new ModifGroup(m[i][0], m[i][1], this)
                 {
                     Location = new Point(pos[0], pos[1] += 151)
-                }.Group);
+                });
                 //If there are more than 3 items listed, we need a scroll bar. AutoScroll will display it, but this compensates for the extra width by adding 14 pixels to the width of the panel, avoiding the need for the horizontal scroll bar 
                 if (i > 3) panel1.Size = new Size(460, panel1.Size.Height);
             }
@@ -237,9 +237,8 @@ namespace Death_Game_Launcher
         }
     }
 
-    public class ModifGroup
+    class ModifGroup : GroupBox
     {
-        private GroupBox groupBox1;
         private Label label1, label2, label3, label4, label5, label6, label7, label8, label9, label10;
         private TextBox nameOldBox, nameNewBox, idOldBox, idNewBox;
         private CheckBox steamLaunchOldBox, steamLaunchNewBox, shortcutLaunchOldBox, shortcutLaunchNewBox;
@@ -251,278 +250,279 @@ namespace Death_Game_Launcher
         {
             this._parent = parent;
             //
-            this.groupBox1 = new GroupBox();
-            this.browseBtn = new Button();
-            this.removeBtn = new Button();
-            this.label6 = new Label();
-            this.shortcutLaunchNewBox = new CheckBox();
-            this.label10 = new Label();
-            this.steamLaunchNewBox = new CheckBox();
-            this.label9 = new Label();
-            this.idNewBox = new TextBox();
-            this.label8 = new Label();
-            this.nameNewBox = new TextBox();
-            this.label7 = new Label();
-            this.label1 = new Label();
-            this.shortcutLaunchOldBox = new CheckBox();
-            this.label5 = new Label();
-            this.steamLaunchOldBox = new CheckBox();
-            this.label4 = new Label();
-            this.idOldBox = new TextBox();
-            this.label3 = new Label();
-            this.nameOldBox = new TextBox();
-            this.label2 = new Label();
-            //
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.browseBtn);
-            this.groupBox1.Controls.Add(this.removeBtn);
-            this.groupBox1.Controls.Add(this.label6);
-            this.groupBox1.Controls.Add(this.shortcutLaunchNewBox);
-            this.groupBox1.Controls.Add(this.label10);
-            this.groupBox1.Controls.Add(this.steamLaunchNewBox);
-            this.groupBox1.Controls.Add(this.label9);
-            this.groupBox1.Controls.Add(this.idNewBox);
-            this.groupBox1.Controls.Add(this.label8);
-            this.groupBox1.Controls.Add(this.nameNewBox);
-            this.groupBox1.Controls.Add(this.label7);
-            this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Controls.Add(this.shortcutLaunchOldBox);
-            this.groupBox1.Controls.Add(this.label5);
-            this.groupBox1.Controls.Add(this.steamLaunchOldBox);
-            this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Controls.Add(this.idOldBox);
-            this.groupBox1.Controls.Add(this.label3);
-            this.groupBox1.Controls.Add(this.nameOldBox);
-            this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new Size(440, 145);
-            this.groupBox1.TabIndex = 1;
-            this.groupBox1.TabStop = false;
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new Font("Microsoft Sans Serif", 9.75F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new Point(6, 16);
-            this.label1.Name = "label1";
-            this.label1.Size = new Size(32, 16);
-            this.label1.TabIndex = 8;
-            this.label1.Text = "Old";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new Point(24, 34);
-            this.label2.Name = "label2";
-            this.label2.Size = new Size(38, 13);
-            this.label2.TabIndex = 0;
-            this.label2.Text = "Name:";
-            // 
-            // nameOldBox
-            // 
-            this.nameOldBox.Location = new Point(68, 31);
-            this.nameOldBox.Name = "nameOldBox";
-            this.nameOldBox.ReadOnly = true;
-            this.nameOldBox.Size = new Size(150, 20);
-            this.nameOldBox.TabIndex = 1;
-            this.nameOldBox.TabStop = false;
-            this.nameOldBox.Text = oldMan.name;
-            this.nameOldBox.WordWrap = false;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new Point(224, 34);
-            this.label3.Name = "label3";
-            this.label3.Size = new Size(48, 13);
-            this.label3.TabIndex = 2;
-            this.label3.Text = "Path/ID:";
+            this.label1 = new Label()
+            {
+                AutoSize = true,
+                Font = new Font("Microsoft Sans Serif", 9.75F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0))),
+                Location = new Point(6, 16),
+                Name = "label1",
+                Size = new Size(32, 16),
+                TabIndex = 8,
+                Text = "Old"
+            };
+
+            this.label2 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(23, 34),
+                Name = "label2",
+                Size = new Size(38, 13),
+                TabIndex = 0,
+                Text = "Name:"
+            };
+
+            this.label3 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(224, 34),
+                Name = "label3",
+                Size = new Size(48, 13),
+                TabIndex = 2,
+                Text = "Path/ID:"
+            };
             this.label3.MouseHover += new EventHandler(this.Path_MouseHover);
             this.label3.MouseLeave += new EventHandler(this.Path_MouseLeave);
-            // 
-            // idOldBox
-            // 
-            this.idOldBox.Location = new Point(278, 31);
-            this.idOldBox.Name = "idOldBox";
-            this.idOldBox.ReadOnly = true;
-            this.idOldBox.Size = new Size(150, 20);
-            this.idOldBox.TabIndex = 3;
-            this.idOldBox.TabStop = false;
-            this.idOldBox.Text = oldMan.path;
-            this.idOldBox.WordWrap = false;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new Point(24, 57);
-            this.label4.Name = "label4";
-            this.label4.Size = new Size(76, 13);
-            this.label4.TabIndex = 4;
-            this.label4.Text = "Steam Launch";
+
+            this.label4 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(24, 57),
+                Name = "label4",
+                Size = new Size(76, 13),
+                TabIndex = 4,
+                Text = "Steam Launch"
+            };
             this.label4.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
             this.label4.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
-            // 
-            // steamLaunchOldBox
-            // 
-            this.steamLaunchOldBox.AutoCheck = false;
-            this.steamLaunchOldBox.AutoSize = true;
-            this.steamLaunchOldBox.Checked = oldMan.steamLaunch;
-            this.steamLaunchOldBox.Enabled = false;
-            this.steamLaunchOldBox.Location = new Point(106, 57);
-            this.steamLaunchOldBox.Name = "steamLaunchOldBox";
-            this.steamLaunchOldBox.Size = new Size(15, 14);
-            this.steamLaunchOldBox.TabIndex = 5;
-            this.steamLaunchOldBox.TabStop = false;
-            this.steamLaunchOldBox.UseVisualStyleBackColor = true;
-            this.steamLaunchOldBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
-            this.steamLaunchOldBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new Point(137, 57);
-            this.label5.Name = "label5";
-            this.label5.Size = new Size(86, 13);
-            this.label5.TabIndex = 6;
-            this.label5.Text = "Shortcut Launch";
+
+            this.label5 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(137, 57),
+                Name = "label5",
+                Size = new Size(86, 13),
+                TabIndex = 6,
+                Text = "Shortcut Launch"
+            };
             this.label5.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
             this.label5.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
-            // 
-            // shortcutLaunchOldBox
-            // 
-            this.shortcutLaunchOldBox.AutoCheck = false;
-            this.shortcutLaunchOldBox.AutoSize = true;
-            this.shortcutLaunchOldBox.Checked = oldMan.useShortcut;
-            this.shortcutLaunchOldBox.Enabled = false;
-            this.shortcutLaunchOldBox.Location = new Point(229, 57);
-            this.shortcutLaunchOldBox.Name = "shortcutLaunchOldBox";
-            this.shortcutLaunchOldBox.Size = new Size(15, 14);
-            this.shortcutLaunchOldBox.TabIndex = 7;
-            this.shortcutLaunchOldBox.TabStop = false;
-            this.shortcutLaunchOldBox.UseVisualStyleBackColor = true;
-            this.shortcutLaunchOldBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
-            this.shortcutLaunchOldBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new Font("Microsoft Sans Serif", 9.75F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new Point(6, 75);
-            this.label6.Name = "label6";
-            this.label6.Size = new Size(38, 16);
-            this.label6.TabIndex = 17;
-            this.label6.Text = "New";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new Point(24, 93);
-            this.label7.Name = "label7";
-            this.label7.Size = new Size(38, 13);
-            this.label7.TabIndex = 9;
-            this.label7.Text = "Name:";
-            // 
-            // nameNewBox
-            // 
-            this.nameNewBox.Location = new Point(68, 90);
-            this.nameNewBox.Name = "nameNewBox";
-            this.nameNewBox.Size = new Size(150, 20);
-            this.nameNewBox.TabIndex = 10;
-            this.nameNewBox.Text = newMan.name;
-            this.nameNewBox.WordWrap = false;
-            // 
-            // label8
-            // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new Point(224, 93);
-            this.label8.Name = "label8";
-            this.label8.Size = new Size(48, 13);
-            this.label8.TabIndex = 11;
-            this.label8.Text = "Path/ID:";
+
+            this.label6 = new Label()
+            {
+                AutoSize = true,
+                Font = new Font("Microsoft Sans Serif", 9.75F, FontStyle.Bold, GraphicsUnit.Point, ((byte)(0))),
+                Location = new Point(6, 75),
+                Name = "label6",
+                Size = new Size(38, 16),
+                TabIndex = 17,
+                Text = "New"
+            };
+
+            this.label7 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(24, 93),
+                Name = "label7",
+                Size = new Size(38, 13),
+                TabIndex = 9,
+                Text = "Name:"
+            };
+
+            this.label8 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(224, 93),
+                Name = "label8",
+                Size = new Size(48, 13),
+                TabIndex = 11,
+                Text = "Path/ID:"
+            };
             this.label8.MouseHover += new EventHandler(this.Path_MouseHover);
             this.label8.MouseLeave += new EventHandler(this.Path_MouseLeave);
-            // 
-            // idNewBox
-            // 
-            this.idNewBox.Location = new Point(278, 90);
-            this.idNewBox.Name = "idNewBox";
-            this.idNewBox.Size = new Size(150, 20);
-            this.idNewBox.TabIndex = 12;
-            this.idNewBox.Text = newMan.path;
-            this.idNewBox.WordWrap = false;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new Point(24, 116);
-            this.label9.Name = "label9";
-            this.label9.Size = new Size(76, 13);
-            this.label9.TabIndex = 13;
-            this.label9.Text = "Steam Launch";
+
+            this.label9 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(24, 116),
+                Name = "label9",
+                Size = new Size(76, 13),
+                TabIndex = 13,
+                Text = "Steam Launch"
+            };
             this.label9.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
             this.label9.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
-            // 
-            // steamLaunchNewBox
-            // 
-            this.steamLaunchNewBox.AutoSize = true;
-            this.steamLaunchNewBox.Checked = newMan.steamLaunch;
-            this.steamLaunchNewBox.Location = new Point(106, 116);
-            this.steamLaunchNewBox.Name = "steamLaunchNewBox";
-            this.steamLaunchNewBox.Size = new Size(15, 14);
-            this.steamLaunchNewBox.TabIndex = 14;
-            this.steamLaunchNewBox.UseVisualStyleBackColor = true;
-            this.steamLaunchNewBox.Click += new EventHandler(this.SteamCheck_Click);
-            this.steamLaunchNewBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
-            this.steamLaunchNewBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new Point(137, 116);
-            this.label10.Name = "label10";
-            this.label10.Size = new Size(86, 13);
-            this.label10.TabIndex = 15;
-            this.label10.Text = "Shortcut Launch";
+
+            this.label10 = new Label()
+            {
+                AutoSize = true,
+                Location = new Point(137, 116),
+                Name = "label10",
+                Size = new Size(86, 13),
+                Text = "Shortcut Launch"
+            };
             this.label10.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
             this.label10.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
-            // 
-            // shortcutLaunchNewBox
-            // 
-            this.shortcutLaunchNewBox.AutoSize = true;
-            this.shortcutLaunchNewBox.Checked = newMan.useShortcut;
-            this.shortcutLaunchNewBox.Location = new Point(229, 116);
-            this.shortcutLaunchNewBox.Name = "shortcutLaunchNewBox";
-            this.shortcutLaunchNewBox.Size = new Size(15, 14);
-            this.shortcutLaunchNewBox.TabIndex = 16;
-            this.shortcutLaunchNewBox.UseVisualStyleBackColor = true;
-            this.shortcutLaunchNewBox.Click += new EventHandler(this.ShortcutCheck_Click);
-            this.shortcutLaunchNewBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
-            this.shortcutLaunchNewBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
-            // 
-            // browseBtn
-            // 
-            this.browseBtn.Location = new Point(332, 116);
-            this.browseBtn.Name = "browseBtn";
-            this.browseBtn.Size = new Size(25, 23);
-            this.browseBtn.TabIndex = 2;
-            this.browseBtn.Text = "...";
-            this.browseBtn.UseVisualStyleBackColor = true;
+
+            this.browseBtn = new Button()
+            {
+                Location = new Point(332, 116),
+                Name = "browseBtn",
+                Size = new Size(25, 23),
+                TabIndex = 2,
+                Text = "...",
+                UseVisualStyleBackColor = true
+            };
             this.browseBtn.Click += new EventHandler(this.Browse_Click);
             this.browseBtn.MouseHover += new EventHandler(this.Browse_MouseHover);
             this.browseBtn.MouseLeave += new EventHandler(this.Browse_MouseLeave);
-            // 
-            // removeBtn
-            // 
-            this.removeBtn.Location = new Point(363, 116);
-            this.removeBtn.Name = "removeBtn";
-            this.removeBtn.Size = new Size(65, 23);
-            this.removeBtn.TabIndex = 2;
-            this.removeBtn.Text = "Remove";
-            this.removeBtn.UseVisualStyleBackColor = true;
+
+            this.removeBtn = new Button()
+            {
+                Location = new Point(363, 116),
+                Name = "removeBtn",
+                Size = new Size(65, 23),
+                TabIndex = 2,
+                Text = "Remove",
+                UseVisualStyleBackColor = true
+            };
             this.removeBtn.Click += new EventHandler(this.Remove_Click);
             this.removeBtn.MouseHover += new EventHandler(this.Remove_MouseHover);
             this.removeBtn.MouseLeave += new EventHandler(this.Remove_MouseLeave);
+
+            this.steamLaunchOldBox = new CheckBox()
+            {
+                AutoCheck = false,
+                AutoSize = true,
+                Checked = oldMan.steamLaunch,
+                Enabled = false,
+                Location = new Point(106, 57),
+                Name = "steamLaunchOldBox",
+                Size = new Size(15, 14),
+                TabIndex = 5,
+                TabStop = false,
+                UseVisualStyleBackColor = true
+            };
+            this.steamLaunchOldBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.steamLaunchOldBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
+
+            this.steamLaunchNewBox = new CheckBox()
+            {
+                AutoSize = true,
+                Checked = newMan.steamLaunch,
+                Location = new Point(106, 116),
+                Name = "steamLaunchNewBox",
+                Size = new Size(15, 14),
+                TabIndex = 14,
+                UseVisualStyleBackColor = true
+            };
+            this.steamLaunchNewBox.Click += new EventHandler(this.SteamCheck_Click);
+            this.steamLaunchNewBox.MouseHover += new EventHandler(this.SteamLaunch_MouseHover);
+            this.steamLaunchNewBox.MouseLeave += new EventHandler(this.SteamLaunch_MouseLeave);
+
+            this.shortcutLaunchOldBox = new CheckBox()
+            {
+                AutoCheck = false,
+                AutoSize = true,
+                Checked = oldMan.useShortcut,
+                Enabled = false,
+                Location = new Point(229, 57),
+                Name = "shortcutLaunchOldBox",
+                Size = new Size(15, 14),
+                TabIndex = 7,
+                TabStop = false,
+                UseVisualStyleBackColor = true
+            };
+            this.shortcutLaunchOldBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.shortcutLaunchOldBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
+
+            this.shortcutLaunchNewBox = new CheckBox()
+            {
+                AutoSize = true,
+                Checked = newMan.useShortcut,
+                Location = new Point(229, 116),
+                Name = "shortcutLaunchNewBox",
+                Size = new Size(15, 14),
+                TabIndex = 16,
+                UseVisualStyleBackColor = true
+            };
+            this.shortcutLaunchNewBox.Click += new EventHandler(this.ShortcutCheck_Click);
+            this.shortcutLaunchNewBox.MouseHover += new EventHandler(this.ShortcutLaunch_MouseHover);
+            this.shortcutLaunchNewBox.MouseLeave += new EventHandler(this.ShortcutLaunch_MouseLeave);
+
+            this.idOldBox = new TextBox()
+            {
+                Location = new Point(278, 31),
+                Name = "idOldBox",
+                ReadOnly = true,
+                Size = new Size(150, 20),
+                TabIndex = 3,
+                TabStop = false,
+                Text = oldMan.path,
+                WordWrap = false
+            };
+
+            this.idNewBox = new TextBox()
+            {
+                Location = new Point(278, 90),
+                Name = "idNewBox",
+                Size = new Size(150, 20),
+                TabIndex = 12,
+                Text = newMan.path,
+                WordWrap = false
+            };
+
+            this.nameOldBox = new TextBox()
+            {
+                Location = new Point(68, 31),
+                Name = "nameOldBox",
+                ReadOnly = true,
+                Size = new Size(150, 20),
+                TabIndex = 1,
+                TabStop = false,
+                Text = oldMan.name,
+                WordWrap = false
+            };
+
+            this.nameNewBox = new TextBox()
+            {
+                Location = new Point(68, 90),
+                Name = "nameNewBox",
+                Size = new Size(150, 20),
+                TabIndex = 10,
+                Text = newMan.name,
+                WordWrap = false
+            };
+
+            //
+            //
+            //
+            this.Controls.Add(this.browseBtn);
+            this.Controls.Add(this.removeBtn);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.shortcutLaunchNewBox);
+            this.Controls.Add(this.label10);
+            this.Controls.Add(this.steamLaunchNewBox);
+            this.Controls.Add(this.label9);
+            this.Controls.Add(this.idNewBox);
+            this.Controls.Add(this.label8);
+            this.Controls.Add(this.nameNewBox);
+            this.Controls.Add(this.label7);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.shortcutLaunchOldBox);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.steamLaunchOldBox);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.idOldBox);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.nameOldBox);
+            this.Controls.Add(this.label2);
+            this.Name = "modifGroup";
+            this.Size = new Size(440, 145);
+            this.TabIndex = 1;
+            this.TabStop = false;
+            //
+            //
+            //
         }
 
         //Un-checks the 'Shortcut Launch' CheckBox if the 'Steam Launch' CheckBox gets checked, as a shortcut launch with a Steam game is not needed
@@ -562,9 +562,9 @@ namespace Death_Game_Launcher
         }
 
         //Used to get the GroupBox from this object so it can be put into the Panel's controls
-        public GroupBox Group { get { return this.groupBox1; } }
+        //public GroupBox Group { get { return this.groupBox1; } }
         //Sets the Location of the GroupBox
-        public Point Location { set { this.groupBox1.Location = value; } }
+        //public Point Location { set { this.groupBox1.Location = value; } }
 
         //Tooltip Methods for labels and such
         ToolTip tip = new ToolTip();
