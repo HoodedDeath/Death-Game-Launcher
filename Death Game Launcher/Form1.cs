@@ -36,9 +36,13 @@ namespace Death_Game_Launcher
 
         Thread loadingThread;
 
+        public static Logger _log;
+
         public Form1()
         {
             InitializeComponent();
+            //Initialize the Logger
+            _log = new Logger((int)Registry.GetValue(regpath, "logLvl", 2));
             //If the user wants to scan for Steam games
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
@@ -152,7 +156,9 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
-                MessageBox.Show("Failed to load games from saved list:\n" + e.Message);
+                //Log error from failing to load Inclusions
+                _log.Error(e, "Failed to load games from saved list.");
+                //MessageBox.Show("Failed to load games from saved list:\n" + e.Message);
             }
             //
             //Sort _gamesList before modifying, for pretty much no reason but my own desire
@@ -232,8 +238,10 @@ namespace Death_Game_Launcher
             {
                 //Restores the game modifications List whenever the try block fails, avoiding loss of changes to games due to an exception
                 this._gameMods = holdmod;
+                //Logs error of failed load from Modifications
+                _log.Error(e, "Failed to load modification list.");
                 //Displays error
-                MessageBox.Show("Failed to load modification list:\n" + e.Message);
+                //MessageBox.Show("Failed to load modification list:\n" + e.Message);
             }
             //
             //Temporary variable to hold the exclusions List incase the try block fails after erasing the exclusions List
@@ -294,6 +302,8 @@ namespace Death_Game_Launcher
             {
                 //Restores the exclusions list whenever the try block fails
                 this._exclusionsList = holdex;
+                //Logs the error in loading exclusions
+                _log.Error(e, "Failed to load Exclusion list.");
                 //Displays error
                 MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
             }
@@ -327,6 +337,11 @@ namespace Death_Game_Launcher
                 AddExcludedGames();
                 //Saves any game detail modifications the user made
                 AddGameModifications();
+                //Saves the log to a file
+                //string p = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                _log.SaveToFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DLG-Log.txt"));
+                //Saves log level
+                Registry.SetValue(regpath, "logLvl", _log.LogLevel);
             }
         }
         //Saves local launch games to config file
@@ -354,7 +369,9 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
-                MessageBox.Show("Failed to save added games:\n" + e.Message);
+                //Log the error in saving the Inclusions list
+                _log.Error(e, "Failed to save added games.");
+                //MessageBox.Show("Failed to save added games:\n" + e.Message);
             }
         }
         //Saves excluded Steam games to config file
@@ -382,7 +399,9 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
-                MessageBox.Show("Failed to save excluded games:\n" + e.Message);
+                //Log the error in saving Exclusions list
+                _log.Error(e, "Failed to save excluded games.");
+                //MessageBox.Show("Failed to save excluded games:\n" + e.Message);
             }
         }
         //Saves changes made to listings
@@ -415,7 +434,12 @@ namespace Death_Game_Launcher
                 }
                 Registry.SetValue(regpath, "Modifications", games.ToArray());
             }
-            catch (Exception e) { MessageBox.Show("Failed to save edits to games in listing:\n" + e.Message); }
+            catch (Exception e)
+            {
+                //Log the error in saving the Modifications list
+                _log.Error(e, "Failed to save edits to games in listing.");
+                //MessageBox.Show("Failed to save edits to games in listing:\n" + e.Message);
+            }
         }
         //Eliminates chains of changes to a single game
         //Example: 'a' -> 'ab', 'ab' -> 'ba'; results in 'a' -> 'ba'
@@ -561,7 +585,7 @@ namespace Death_Game_Launcher
             }
             //If the game was not found in the games list, notify
             //Should never have to run this, since all listed games should always be in the games list
-            else MessageBox.Show("Error removing game. Game not found in games list.");
+            else _log.Warn("Error removing game during RemoveGame(Manifest manifest) in Form1.cs. Game not found in games list."); //MessageBox.Show("Error removing game. Game not found in games list.");
         }
 
         //Used by 'Grouping' class for updating game info
@@ -592,6 +616,7 @@ namespace Death_Game_Launcher
             //Should never run this, since all listed games should always be in games list
             else
             {
+                _log.Warn("Update failed during UpdateGame(Manifest oldMan, Manifest newMan) in Form1.cs");
                 MessageBox.Show("Update failed.");
             }
             //Sorts games list alphabetically
@@ -706,6 +731,19 @@ namespace Death_Game_Launcher
             bool r = !(b == this.isExit);
             this.isExit = b;
             return r;
+        }
+
+        private void LoggingLevelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //``````````````````````````````````````
+            using (var form = new SelectLogLevelForm(_log.LogLevel))
+            {
+                DialogResult res = form.ShowDialog();
+                if (res == DialogResult.OK)
+                {
+                    _log.LogLevel = form.Level;
+                }
+            }
         }
     }
 
@@ -827,7 +865,8 @@ namespace Death_Game_Launcher
                 if (new Config().CloseOnLaunch)
                     Application.Exit();
             }
-            catch (Exception ex) { MessageBox.Show(ex.Message); }
+            catch (Win32Exception ex) { Form1._log.Warn("Application cannot find path specified for game.\n" + ex.StackTrace); }
+            catch (Exception ex) { Form1._log.Error(ex, ex.Message); MessageBox.Show(ex.Message); }
         }
 
         //Called when a mouse button is clicked on the Settings button
@@ -851,12 +890,17 @@ namespace Death_Game_Launcher
         //Used to launch external game settings apps based on which game it is, defaults to the launcher shortcut settings for that game
         private void Settings_App(object sender, EventArgs e)
         {
-            switch (this.Manifest.path)
+            if (this.Manifest.steamLaunch)
+                SettingsSwitch(this.Manifest.path);
+            else if (this.Manifest.useSettingsApp)
+                SettingsSwitch(this.Manifest.settingsApp);
+            else
+                SettingsSwitch("");
+        }
+        private void SettingsSwitch(string test)
+        {
+            switch (test)
             {
-                //If there is no path for some reason, default
-                case "":
-                    Short(sender, e);
-                    break;
                 //If the path is the Steam game id for Subnautica, try to launch the external app for it
                 case "264710": //Subnautica
                     //The external app saves its most recent path to a file in the Appdata\Roaming folder, check if that exists
@@ -873,11 +917,11 @@ namespace Death_Game_Launcher
                             System.Diagnostics.Process.Start(path, "nolaunch");
                         }
                         //Incase of any failure, default to shortcut settings
-                        catch { Short(sender, e); }
+                        catch { Short(this, EventArgs.Empty); }
                     }
                     //Default to shortcut settings
                     else
-                        Short(sender, e);
+                        Short(this, EventArgs.Empty);
                     break;
                 //If the path is the Steam game id for Terraria, try to launch the external app for it
                 case "105600": //Terraria
@@ -895,15 +939,15 @@ namespace Death_Game_Launcher
                             System.Diagnostics.Process.Start(path, "nolaunch");
                         }
                         //Incase of any failure, default to shortcut settings
-                        catch { Short(sender, e); }
+                        catch { Short(this, EventArgs.Empty); }
                     }
                     //Default to shortcut settings
                     else
-                        Short(sender, e);
+                        Short(this, EventArgs.Empty);
                     break;
                 //Default to shortcut settings
                 default:
-                    Short(sender, e);
+                    Short(this, EventArgs.Empty);
                     break;
             }
         }
@@ -957,13 +1001,13 @@ namespace Death_Game_Launcher
         public string path;
         public bool steamLaunch;
         public bool useShortcut;
-
-        //Easy way to print out details of game Manifest, mostly for debugging/testing
+        public bool useSettingsApp;
+        public string settingsApp;
+        
         public override string ToString()
         {
             return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
         }
-        //
         public static bool operator ==(Manifest a, Manifest b)
         {
             return a.name == b.name &&
@@ -1016,101 +1060,110 @@ namespace Death_Game_Launcher
             //Gets the value that is held in the Registry to find out where Steam is located
             object ret = Microsoft.Win32.Registry.GetValue("HKEY_CURRENT_USER\\Software\\Valve\\Steam", "SteamPath", "NO VAL");
             //If Steam install path is not found in registry, the user will have to input the path manually
-            if (ret == null || (string)ret == "NO VAL") { MessageBox.Show("Steam is not installed as expected, unable to continue."); }
-            //Scan default games dir
-            string defPath = (string)ret + "\\steamapps";
-            //Gets full path to each Steam app manifest file in the default game directory
-            string[] sa = Directory.GetFiles(defPath, "*.acf");
-            //As long as there is at least one file in that directory
-            if (sa.Length > 0)
+            if (ret == null || (string)ret == "NO VAL")
             {
-                //Loops through all found app manifest files
-                foreach (string s in sa)
-                {
-                    try
-                    {
-                        //Used to store data of the current game
-                        Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(s));
-                        //Padding to reach the Steam id of the game
-                        sr.ReadLine(); sr.ReadLine();
-                        string[] t = sr.ReadLine().Split('"');
-                        //Saves the Steam id of the game
-                        manifest.path = t[t.Length - 2];
-                        //Padding to reach the name of the game
-                        sr.ReadLine();
-                        t = null; t = sr.ReadLine().Split('"');
-                        //Saves the name of the game
-                        manifest.name = t[t.Length - 2];
-                        manifest.steamLaunch = true;
-                        sr.Close();
-                        sr.Dispose();
-                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
-                        manifest.useShortcut = false;
-                        //Adds the game to the list of games to be returned if it is not already in the list
-                        //Should always evaluate true
-                        if (!val.Contains(manifest)) val.Add(manifest);
-                    }
-                    catch (Exception e) { MessageBox.Show("Exception while scanning Steam default directory:\n" + e.Message); }
-                }
+                Form1._log.Warn("Steam is not installed as expected, scanning thread is unable to continue.");
+                /*return;
+                MessageBox.Show("Steam is not installed as expected, unable to continue.");*/
             }
-            //Scan user created game dirs
-            try
+            else
             {
-                //Path to Steam's file containing paths to user-created library folders
-                string libraryFoldersFile = (string)ret + "\\steamapps\\libraryfolders.vdf";
-                //List of user-created library folders to be scanned
-                List<string> libraryFolders = new List<string>();
-                StreamReader streamReader = new StreamReader(File.OpenRead(libraryFoldersFile));
-                //Padding to reach the first listed library folder
-                streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine();
-                //Infinite loop to read to end of file
-                for (; ; )
+                //Scan default games dir
+                string defPath = (string)ret + "\\steamapps";
+                //Gets full path to each Steam app manifest file in the default game directory
+                string[] sa = Directory.GetFiles(defPath, "*.acf");
+                //As long as there is at least one file in that directory
+                if (sa.Length > 0)
                 {
-                    string temp = streamReader.ReadLine();
-                    //Breaks at end of file
-                    if (temp == null || temp == "" || temp == "}") break;
-                    string[] t = temp.Split('"');
-                    //Saves the path of the library folder
-                    libraryFolders.Add(t[t.Length - 2]);
-                }
-                streamReader.Close();
-                streamReader.Dispose();
-                //Loops through each user-created library folder
-                foreach (string folder in libraryFolders.ToArray<string>())
-                {
-                    //Directory where the Steam app manifest files are
-                    string path = folder + "\\steamapps";
-                    //Gets all app manifest files in the directory
-                    string[] files = Directory.GetFiles(path, "*.acf");
-                    //Loops through each file to read each game
-                    foreach (string file in files)
+                    //Loops through all found app manifest files
+                    foreach (string s in sa)
                     {
-                        //Used to hold data for the game
-                        Manifest manifest = new Manifest();
-                        StreamReader sr = new StreamReader(File.OpenRead(file));
-                        //Padding to reach the Steam application id
-                        sr.ReadLine(); sr.ReadLine();
-                        string[] t = sr.ReadLine().Split('"');
-                        //Saves app id
-                        manifest.path = t[t.Length - 2];
-                        //Padding to reach app name
-                        sr.ReadLine();
-                        t = null; t = sr.ReadLine().Split('"');
-                        //Saves name
-                        manifest.name = t[t.Length - 2];
-                        manifest.steamLaunch = true;
-                        sr.Close();
-                        sr.Dispose();
-                        //Sets useShortcut to false since launching will not need to use a shortcut for any reason
-                        manifest.useShortcut = false;
-                        //Adds the game to the list of games to be returned if it is not already in the list
-                        //Should always evaluate true
-                        if (!val.Contains(manifest)) val.Add(manifest);
+                        try
+                        {
+                            //Used to store data of the current game
+                            Manifest manifest = new Manifest();
+                            StreamReader sr = new StreamReader(File.OpenRead(s));
+                            //Padding to reach the Steam id of the game
+                            sr.ReadLine(); sr.ReadLine();
+                            string[] t = sr.ReadLine().Split('"');
+                            //Saves the Steam id of the game
+                            manifest.path = t[t.Length - 2];
+                            //Padding to reach the name of the game
+                            sr.ReadLine();
+                            t = null; t = sr.ReadLine().Split('"');
+                            //Saves the name of the game
+                            manifest.name = t[t.Length - 2];
+                            manifest.steamLaunch = true;
+                            sr.Close();
+                            sr.Dispose();
+                            //Sets useShortcut to false since launching will not need to use a shortcut for any reason
+                            manifest.useShortcut = false;
+                            //Adds the game to the list of games to be returned if it is not already in the list
+                            //Should always evaluate true
+                            if (!val.Contains(manifest)) val.Add(manifest);
+                        }
+                        catch (Exception e) { Form1._log.Error(e, "Exception while scanning Steam default directory."); }
                     }
                 }
+                //Scan user created game dirs
+                try
+                {
+                    //Path to Steam's file containing paths to user-created library folders
+                    string libraryFoldersFile = (string)ret + "\\steamapps\\libraryfolders.vdf";
+                    //List of user-created library folders to be scanned
+                    List<string> libraryFolders = new List<string>();
+                    StreamReader streamReader = new StreamReader(File.OpenRead(libraryFoldersFile));
+                    //Padding to reach the first listed library folder
+                    streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine(); streamReader.ReadLine();
+                    //Infinite loop to read to end of file
+                    for (; ; )
+                    {
+                        string temp = streamReader.ReadLine();
+                        //Breaks at end of file
+                        if (temp == null || temp == "" || temp == "}") break;
+                        string[] t = temp.Split('"');
+                        //Saves the path of the library folder
+                        libraryFolders.Add(t[t.Length - 2]);
+                    }
+                    streamReader.Close();
+                    streamReader.Dispose();
+                    //Loops through each user-created library folder
+                    foreach (string folder in libraryFolders.ToArray<string>())
+                    {
+                        //Directory where the Steam app manifest files are
+                        string path = folder + "\\steamapps";
+                        //Gets all app manifest files in the directory
+                        string[] files = Directory.GetFiles(path, "*.acf");
+                        //Loops through each file to read each game
+                        foreach (string file in files)
+                        {
+                            //Used to hold data for the game
+                            Manifest manifest = new Manifest();
+                            StreamReader sr = new StreamReader(File.OpenRead(file));
+                            //Padding to reach the Steam application id
+                            sr.ReadLine(); sr.ReadLine();
+                            string[] t = sr.ReadLine().Split('"');
+                            //Saves app id
+                            manifest.path = t[t.Length - 2];
+                            //Padding to reach app name
+                            sr.ReadLine();
+                            t = null; t = sr.ReadLine().Split('"');
+                            //Saves name
+                            manifest.name = t[t.Length - 2];
+                            manifest.steamLaunch = true;
+                            sr.Close();
+                            sr.Dispose();
+                            //Sets useShortcut to false since launching will not need to use a shortcut for any reason
+                            manifest.useShortcut = false;
+                            //Adds the game to the list of games to be returned if it is not already in the list
+                            //Should always evaluate true
+                            if (!val.Contains(manifest)) val.Add(manifest);
+                        }
+                    }
+                }
+                catch (Exception e) { Form1._log.Error(e, "Exception while loading games from user-created Steam library folders"); /*MessageBox.Show("Failed loading games from user-created Steam library folders:\n" + e.Message);*/ }
             }
-            catch (Exception e) { MessageBox.Show("Failed loading games from user-created Steam library folders:\n" + e.Message); }
+            
             //Sorts the found Games in alphabetical order
             val.Sort((x, y) => x.name.CompareTo(y.name));
 

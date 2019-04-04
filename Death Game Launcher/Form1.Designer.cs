@@ -32,14 +32,15 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.restartToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.scanButton = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.closeCheckBox = new System.Windows.Forms.CheckBox();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.addGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exclusionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.changesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.scanButton = new System.Windows.Forms.Button();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.closeCheckBox = new System.Windows.Forms.CheckBox();
+            this.loggingLevelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -76,6 +77,38 @@
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(110, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
+            // 
+            // editToolStripMenuItem
+            // 
+            this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.addGameToolStripMenuItem,
+            this.exclusionsToolStripMenuItem,
+            this.changesToolStripMenuItem,
+            this.loggingLevelToolStripMenuItem});
+            this.editToolStripMenuItem.Name = "editToolStripMenuItem";
+            this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
+            this.editToolStripMenuItem.Text = "Edit";
+            // 
+            // addGameToolStripMenuItem
+            // 
+            this.addGameToolStripMenuItem.Name = "addGameToolStripMenuItem";
+            this.addGameToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.addGameToolStripMenuItem.Text = "Add Game";
+            this.addGameToolStripMenuItem.Click += new System.EventHandler(this.AddGameToolStripMenuItem_Click);
+            // 
+            // exclusionsToolStripMenuItem
+            // 
+            this.exclusionsToolStripMenuItem.Name = "exclusionsToolStripMenuItem";
+            this.exclusionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exclusionsToolStripMenuItem.Text = "Exclusions";
+            this.exclusionsToolStripMenuItem.Click += new System.EventHandler(this.ExclusionsToolStripMenuItem_Click);
+            // 
+            // changesToolStripMenuItem
+            // 
+            this.changesToolStripMenuItem.Name = "changesToolStripMenuItem";
+            this.changesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.changesToolStripMenuItem.Text = "Changes";
+            this.changesToolStripMenuItem.Click += new System.EventHandler(this.ChangesToolStripMenuItem_Click);
             // 
             // panel1
             // 
@@ -115,36 +148,12 @@
             this.closeCheckBox.UseVisualStyleBackColor = true;
             this.closeCheckBox.CheckedChanged += new System.EventHandler(this.CloseCheckBox_CheckedChanged);
             // 
-            // editToolStripMenuItem
+            // loggingLevelToolStripMenuItem
             // 
-            this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.addGameToolStripMenuItem,
-            this.exclusionsToolStripMenuItem,
-            this.changesToolStripMenuItem});
-            this.editToolStripMenuItem.Name = "editToolStripMenuItem";
-            this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
-            this.editToolStripMenuItem.Text = "Edit";
-            // 
-            // addGameToolStripMenuItem
-            // 
-            this.addGameToolStripMenuItem.Name = "addGameToolStripMenuItem";
-            this.addGameToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.addGameToolStripMenuItem.Text = "Add Game";
-            this.addGameToolStripMenuItem.Click += new System.EventHandler(this.AddGameToolStripMenuItem_Click);
-            // 
-            // exclusionsToolStripMenuItem
-            // 
-            this.exclusionsToolStripMenuItem.Name = "exclusionsToolStripMenuItem";
-            this.exclusionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.exclusionsToolStripMenuItem.Text = "Exclusions";
-            this.exclusionsToolStripMenuItem.Click += new System.EventHandler(this.ExclusionsToolStripMenuItem_Click);
-            // 
-            // changesToolStripMenuItem
-            // 
-            this.changesToolStripMenuItem.Name = "changesToolStripMenuItem";
-            this.changesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.changesToolStripMenuItem.Text = "Changes";
-            this.changesToolStripMenuItem.Click += new System.EventHandler(this.ChangesToolStripMenuItem_Click);
+            this.loggingLevelToolStripMenuItem.Name = "loggingLevelToolStripMenuItem";
+            this.loggingLevelToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loggingLevelToolStripMenuItem.Text = "Logging Level";
+            this.loggingLevelToolStripMenuItem.Click += new System.EventHandler(this.LoggingLevelToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -158,7 +167,6 @@
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Form1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -183,6 +191,7 @@
         private System.Windows.Forms.ToolStripMenuItem addGameToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exclusionsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem changesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loggingLevelToolStripMenuItem;
     }
 }
 

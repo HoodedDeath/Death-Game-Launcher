@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static Death_Game_Launcher.Form1;
 
 namespace Death_Game_Launcher
 {
@@ -88,7 +87,7 @@ namespace Death_Game_Launcher
                     }
                 }
             }
-            catch (Exception e) { MessageBox.Show("Failed to load modification list:\n" + e.Message); }
+            catch (Exception e) { Form1._log.Error(e, "Failed to load modifications list."); /*MessageBox.Show("Failed to load modification list:\n" + e.Message);*/ }
             //Sorts _gameMods alphabetically based on the name given in the new details of each game
             _gameMods.Sort((x, y) => x[1].name.CompareTo(y[1].name));
         }

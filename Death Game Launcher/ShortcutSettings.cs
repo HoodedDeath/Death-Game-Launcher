@@ -12,21 +12,15 @@ namespace Death_Game_Launcher
 {
     public partial class ShortcutSettings : Form
     {
-        /*public ShortcutSettings(string name, string path, bool isSteamLaunch, bool useShortcut)
-        {
-            InitializeComponent();
-            this.GameName = name;
-            this.GamePath = path;
-            this.IsSteamLaunch = isSteamLaunch;
-            this.UseShortcut = useShortcut;
-        }*/
         public ShortcutSettings(Manifest manifest)
         {
             InitializeComponent();
+            this.Manifest = manifest;
             this.GameName = manifest.name;
             this.GamePath = manifest.path;
             this.IsSteamLaunch = manifest.steamLaunch;
             this.UseShortcut = manifest.useShortcut;
+            SettingsAppCheckbox_CheckedChanged(this, EventArgs.Empty);
         }
 
         ToolTip tip = new ToolTip();
@@ -53,6 +47,14 @@ namespace Death_Game_Launcher
             tip.Show("Whether or not the launcher will create a temporary shortcut to launch the game, as long as it is not a Steam launch", this, ((Control)sender).Location, 10000);
         }
         private void ShortcutCheckBox_MouseLeave(object sender, EventArgs e)
+        {
+            tip.Hide(this);
+        }
+        private void SettingsAppCheckBox_MouseHover(object sender, EventArgs e)
+        {
+            tip.Show("Use an app settings application instead of the shortcut settings window when clicking the settings button", this, ((Control)sender).Location, 10000);
+        }
+        private void SettingsAppCheckBox_MouseLeave(object sender, EventArgs e)
         {
             tip.Hide(this);
         }
@@ -93,5 +95,32 @@ namespace Death_Game_Launcher
         public bool UseShortcut { get { return this.shortcutCheckBox.Checked; } set { this.shortcutCheckBox.Checked = value; } }
         public string GameName { get { return this.nameBox.Text; } set { this.nameBox.Text = value; } }
         public string GamePath { get { return this.pathBox.Text; } set { this.pathBox.Text = value; } }
+        //
+        public bool UseSettingsApp { get { return this.settingsAppCheckbox.Checked; } set { this.settingsAppCheckbox.Checked = value; } }
+        public string SettingsApp { get; set; }
+        //
+        public Manifest Manifest { get; set; }
+        //
+
+        private void SettingsAppCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            this.UseSettingsApp = settingsAppCheckbox.Checked;
+            if (this.settingsAppCheckbox.Checked)
+                this.selectAppButton.Show();
+            else
+                this.selectAppButton.Hide();
+        }
+
+        private void SelectAppButton_Click(object sender, EventArgs e)
+        {
+            //new SelectSettingsApp().ShowDialog();
+            using (var form = new SelectSettingsApp(this.Manifest))
+            {
+                DialogResult res = form.ShowDialog();
+                Manifest m = this.Manifest;
+                m.settingsApp = form.SelectedApp.Name;
+                this.Manifest = m;
+            }
+        }
     }
 }

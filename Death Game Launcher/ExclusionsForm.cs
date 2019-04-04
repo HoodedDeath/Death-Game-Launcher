@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static Death_Game_Launcher.Form1;
 
 namespace Death_Game_Launcher
 {
@@ -103,7 +102,8 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
-                MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
+                Form1._log.Error(e, "Failed to load list of Steam game exclusions.");
+                //MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
             }
 
             //Sorts the List of exclusions
@@ -147,7 +147,8 @@ namespace Death_Game_Launcher
             }
             catch (Exception e)
             {
-                MessageBox.Show("Failed to save excluded games:\n" + e.Message);
+                Form1._log.Error(e, "Failed to saver excluded games.");
+                //MessageBox.Show("Failed to save excluded games:\n" + e.Message);
             }
         }
 
