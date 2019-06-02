@@ -39,6 +39,8 @@
             this.deleteButton = new System.Windows.Forms.Button();
             this.settingsAppCheckbox = new System.Windows.Forms.CheckBox();
             this.selectAppButton = new System.Windows.Forms.Button();
+            this.argsTextBox = new System.Windows.Forms.TextBox();
+            this.argsLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label1
@@ -64,7 +66,7 @@
             // steamCheckBox
             // 
             this.steamCheckBox.AutoSize = true;
-            this.steamCheckBox.Location = new System.Drawing.Point(12, 62);
+            this.steamCheckBox.Location = new System.Drawing.Point(16, 88);
             this.steamCheckBox.Name = "steamCheckBox";
             this.steamCheckBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.steamCheckBox.Size = new System.Drawing.Size(101, 17);
@@ -78,7 +80,7 @@
             // shortcutCheckBox
             // 
             this.shortcutCheckBox.AutoSize = true;
-            this.shortcutCheckBox.Location = new System.Drawing.Point(12, 85);
+            this.shortcutCheckBox.Location = new System.Drawing.Point(16, 111);
             this.shortcutCheckBox.Name = "shortcutCheckBox";
             this.shortcutCheckBox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.shortcutCheckBox.Size = new System.Drawing.Size(151, 17);
@@ -104,7 +106,7 @@
             // 
             // confirmBtn
             // 
-            this.confirmBtn.Location = new System.Drawing.Point(205, 133);
+            this.confirmBtn.Location = new System.Drawing.Point(209, 159);
             this.confirmBtn.Name = "confirmBtn";
             this.confirmBtn.Size = new System.Drawing.Size(75, 23);
             this.confirmBtn.TabIndex = 9;
@@ -115,7 +117,7 @@
             // cancelBtn
             // 
             this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.Location = new System.Drawing.Point(124, 133);
+            this.cancelBtn.Location = new System.Drawing.Point(128, 159);
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(75, 23);
             this.cancelBtn.TabIndex = 10;
@@ -125,7 +127,7 @@
             // 
             // deleteButton
             // 
-            this.deleteButton.Location = new System.Drawing.Point(12, 133);
+            this.deleteButton.Location = new System.Drawing.Point(16, 159);
             this.deleteButton.Name = "deleteButton";
             this.deleteButton.Size = new System.Drawing.Size(75, 23);
             this.deleteButton.TabIndex = 11;
@@ -136,7 +138,7 @@
             // settingsAppCheckbox
             // 
             this.settingsAppCheckbox.AutoSize = true;
-            this.settingsAppCheckbox.Location = new System.Drawing.Point(12, 108);
+            this.settingsAppCheckbox.Location = new System.Drawing.Point(16, 134);
             this.settingsAppCheckbox.Name = "settingsAppCheckbox";
             this.settingsAppCheckbox.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.settingsAppCheckbox.Size = new System.Drawing.Size(111, 17);
@@ -149,13 +151,29 @@
             // 
             // selectAppButton
             // 
-            this.selectAppButton.Location = new System.Drawing.Point(129, 104);
+            this.selectAppButton.Location = new System.Drawing.Point(133, 130);
             this.selectAppButton.Name = "selectAppButton";
             this.selectAppButton.Size = new System.Drawing.Size(75, 23);
             this.selectAppButton.TabIndex = 13;
             this.selectAppButton.Text = "Select App";
             this.selectAppButton.UseVisualStyleBackColor = true;
             this.selectAppButton.Click += new System.EventHandler(this.SelectAppButton_Click);
+            // 
+            // argsTextBox
+            // 
+            this.argsTextBox.Location = new System.Drawing.Point(118, 62);
+            this.argsTextBox.Name = "argsTextBox";
+            this.argsTextBox.Size = new System.Drawing.Size(162, 20);
+            this.argsTextBox.TabIndex = 15;
+            // 
+            // argsLabel
+            // 
+            this.argsLabel.AutoSize = true;
+            this.argsLabel.Location = new System.Drawing.Point(13, 65);
+            this.argsLabel.Name = "argsLabel";
+            this.argsLabel.Size = new System.Drawing.Size(99, 13);
+            this.argsLabel.TabIndex = 14;
+            this.argsLabel.Text = "Launch Arguments:";
             // 
             // ShortcutSettings
             // 
@@ -164,7 +182,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.CancelButton = this.cancelBtn;
-            this.ClientSize = new System.Drawing.Size(286, 162);
+            this.ClientSize = new System.Drawing.Size(290, 197);
+            this.Controls.Add(this.argsTextBox);
+            this.Controls.Add(this.argsLabel);
             this.Controls.Add(this.selectAppButton);
             this.Controls.Add(this.settingsAppCheckbox);
             this.Controls.Add(this.deleteButton);
@@ -202,5 +222,7 @@
         private System.Windows.Forms.Button deleteButton;
         private System.Windows.Forms.CheckBox settingsAppCheckbox;
         private System.Windows.Forms.Button selectAppButton;
+        private System.Windows.Forms.TextBox argsTextBox;
+        private System.Windows.Forms.Label argsLabel;
     }
 }

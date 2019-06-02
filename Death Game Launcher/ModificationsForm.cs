@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿//using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+//using Newtonsoft.Json;
 
 namespace Death_Game_Launcher
 {
@@ -17,15 +18,16 @@ namespace Death_Game_Launcher
         //Used to get the final list of changes made to games
         public List<Manifest[]> Modifs { get; set; } = new List<Manifest[]>();
         //Registry path
-        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+        //private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
         //List of game changes initially found
         private List<Manifest[]> _gameMods = new List<Manifest[]>();
 
-        public ModificationsForm()
+        public ModificationsForm(List<Manifest[]> mods)
         {
             InitializeComponent();
+            Modifs = mods;
             //Reads through the file of changes
-            Read();
+            //Read();
             //Removes any duplicates
             EliminateDuplicates();
             //Displays the list of changes
@@ -33,13 +35,48 @@ namespace Death_Game_Launcher
         }
 
         //Reads through the changes file. Essentially identical to the modification section of Form1.ReadGameConfigs
-        private void Read()
+        /*private void Read()
         {
             //Modify any games based on the Modifications file
             try
             {
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeathApplications", "DLG", "modifications.cfg");
+                if (File.Exists(path))
+                {
+                    StreamReader sr = new StreamReader(File.OpenRead(path));
+                    List<ModJson> modsJ = JsonConvert.DeserializeObject<List<ModJson>>(sr.ReadToEnd());
+                    sr.Close();
+                    sr.Dispose();
+                    foreach (ModJson m in modsJ)
+                    {
+                        this._gameMods.Add(new Manifest[]
+                        {
+                            new Manifest()
+                            {
+                                name = m.Mod.OldName,
+                                path = m.Mod.OldPath,
+                                args = m.Mod.OldArgs,
+                                steamLaunch = m.Mod.OldSteam,
+                                useShortcut = m.Mod.OldShort,
+                                useSettingsApp = m.Mod.OldUseSApp,
+                                settingsApp = ParseSAppID(m.Mod.OldSApp)
+                            },
+                            new Manifest()
+                            {
+                                name = m.Mod.NewName,
+                                path = m.Mod.NewPath,
+                                args = m.Mod.NewArgs,
+                                steamLaunch = m.Mod.NewSteam,
+                                useShortcut = m.Mod.NewShort,
+                                useSettingsApp = m.Mod.NewUseSApp,
+                                settingsApp = ParseSAppID(m.Mod.NewSApp)
+                            }
+                        });
+                    }
+                }
+
                 //Return value from the Modifications registry entry
-                string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
+                /*string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
                 //If ret is not empty
                 if (ret != null && ret.Length > 0)
                 {
@@ -85,12 +122,32 @@ namespace Death_Game_Launcher
                                 break;
                         }
                     }
-                }
+                }*//*
             }
-            catch (Exception e) { Form1._log.Error(e, "Failed to load modifications list."); /*MessageBox.Show("Failed to load modification list:\n" + e.Message);*/ }
+            catch (Exception e) { Form1._log.Error(e, "Failed to load modifications list.");  }
             //Sorts _gameMods alphabetically based on the name given in the new details of each game
             _gameMods.Sort((x, y) => x[1].name.CompareTo(y[1].name));
-        }
+        }*/
+        //Decides which settings app is wanted based on the id string
+        /*private SettingsApp ParseSAppID(string id)
+        {
+            //Read in the saved SettingsApps
+            List<SettingsApp> apps = new List<SettingsApp>();
+            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeathApplications", "DLG", "sapps.cfg")));
+            List<SAppJson> saj = JsonConvert.DeserializeObject<List<SAppJson>>(sr.ReadToEnd());
+            sr.Close();
+            sr.Dispose();
+            foreach (SAppJson sa in saj)
+                apps.Add(sa.SApp);
+            //Loops through all SettingsApps to attempt to find the match to the given id string
+            foreach (SettingsApp a in apps)
+            {
+                if (a.IDString() == id)
+                    return a;
+            }
+            //Shouldn't reach this unless there was no SettingsApp matching the id string
+            return null;
+        }*/
         //Used to eliminate duplicate items
         private void EliminateDuplicates()
         {

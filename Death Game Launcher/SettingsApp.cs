@@ -5,6 +5,10 @@ namespace Death_Game_Launcher
 {
     public class SettingsApp
     {
+        public SettingsApp()
+        {
+
+        }
         public SettingsApp(string name, bool readPathFromFile, string path, string args, bool hereByDefault)
         {
             Name = name;
@@ -13,12 +17,19 @@ namespace Death_Game_Launcher
 
             if (readPathFromFile)
             {
-                //Read File
-                string s = ParsePath(path);
-                StreamReader sr = new StreamReader(s);
-                Path = sr.ReadLine();
-                sr.Close();
-                sr.Dispose();
+                try
+                {
+                    //Read File
+                    string s = ParsePath(path);
+                    StreamReader sr = new StreamReader(s);
+                    Path = sr.ReadLine();
+                    sr.Close();
+                    sr.Dispose();
+                }
+                catch (FileNotFoundException e)
+                {
+                    Form1._log.Error(e, "Failed to read path file for settings app " + name + ".");
+                }
             }
             else
                 Path = path;
@@ -80,7 +91,8 @@ namespace Death_Game_Launcher
         }
 
         public string Name { get; set; }
-        public string Path { get; set; }
+        private string _path;
+        public string Path { get { return _path; } set { _path = ParsePath(value); } }
         public string Args { get; set; }
         public bool HereByDefault { get; set; }
 

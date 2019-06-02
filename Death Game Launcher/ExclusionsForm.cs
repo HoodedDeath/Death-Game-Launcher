@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿//using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,15 +15,16 @@ namespace Death_Game_Launcher
     public partial class ExclusionsForm : Form
     {
         //Registry path
-        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+        //private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
         //List of games to be removed from _gamesList
-        private List<Manifest> _exclusionsList = new List<Manifest>();
+        public List<Manifest> Exclusions { get; set; } = new List<Manifest>();
 
-        public ExclusionsForm()
+        public ExclusionsForm(List<Manifest> ex)
         {
             InitializeComponent();
+            Exclusions = ex;
             //Read through the Exclusions file
-            ReadExclusions();
+            //ReadExclusions();
             //Lists out to found exclusions
             List();
         }
@@ -33,7 +34,7 @@ namespace Death_Game_Launcher
             //The current position of the listed item
             int[] pos = new int[] { 0, -17 };
             //Goes through each Manifest (each exclusion)
-            foreach (Manifest m in _exclusionsList)
+            foreach (Manifest m in Exclusions)
             {
                 //Adds a new CheckBox to the Panel, with the name of the game in the current Manifest
                 panel1.Controls.Add(new CheckBox()
@@ -52,7 +53,7 @@ namespace Death_Game_Launcher
         }
 
         //Reads through the Exclusions file
-        private void ReadExclusions()
+        /*private void ReadExclusions()
         {
 
             try
@@ -108,13 +109,14 @@ namespace Death_Game_Launcher
 
             //Sorts the List of exclusions
             this._exclusionsList.Sort((x, y) => x.name.CompareTo(y.name));
-        }
+        }*/
 
         //Saves the exclusions to the Exclusions file
         private void AddExclusions()
         {
             try
             {
+                List<Manifest> ex = new List<Manifest>();
                 //String List to be saved to the registry
                 List<string> list = new List<string>();
                 //Loops through each CheckBox in the Panel
@@ -123,7 +125,7 @@ namespace Death_Game_Launcher
                     //Temporary variable for comparing values
                     Manifest m = new Manifest();
                     //Search for a Manifest whose name matches the current CheckBox
-                    foreach (Manifest ma in _exclusionsList)
+                    foreach (Manifest ma in Exclusions)
                     {
                         if (ma.name == c.Text)
                         {
@@ -134,20 +136,22 @@ namespace Death_Game_Launcher
                     //If m is not empty, it is a Steam launch, and its CheckBox is checked, add the details to list
                     if (m != new Manifest() && m.steamLaunch && c.Checked)
                     {
-                        list.Add("{");
+                        ex.Add(m);
+                        /*list.Add("{");
                         list.Add("\t\"name\":\"" + m.name + "\"");
                         list.Add("\t\"path\":\"" + m.path + "\"");
                         list.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
                         list.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
-                        list.Add("}");
+                        list.Add("}");*/
                     }
                 }
                 //Converts list to an array and saves it to the registry
-                Registry.SetValue(regpath, "Exclusions", list.ToArray());
+                //Registry.SetValue(regpath, "Exclusions", list.ToArray());
+                Exclusions = ex;
             }
             catch (Exception e)
             {
-                Form1._log.Error(e, "Failed to saver excluded games.");
+                Form1._log.Error(e, "Failed to save excluded games.");
                 //MessageBox.Show("Failed to save excluded games:\n" + e.Message);
             }
         }

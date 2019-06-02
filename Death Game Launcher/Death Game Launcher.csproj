@@ -57,6 +57,9 @@
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -76,23 +79,23 @@
     <Compile Include="AddGameForm.Designer.cs">
       <DependentUpon>AddGameForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Config.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <DependentUpon>Config.settings</DependentUpon>
-    </Compile>
+    <Compile Include="Config.cs" />
+    <Compile Include="Exclusion.cs" />
     <Compile Include="ExclusionsForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ExclusionsForm.Designer.cs">
       <DependentUpon>ExclusionsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ExJson.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Inclusion.cs" />
+    <Compile Include="InclusionJson.cs" />
     <Compile Include="LoadingForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -100,12 +103,15 @@
       <DependentUpon>LoadingForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Logger.cs" />
+    <Compile Include="LoggerDiedException.cs" />
+    <Compile Include="Modification.cs" />
     <Compile Include="ModificationsForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ModificationsForm.Designer.cs">
       <DependentUpon>ModificationsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ModJson.cs" />
     <Compile Include="PathEntry.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -114,6 +120,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SAppJson.cs" />
     <Compile Include="SelectLogLevelForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -170,10 +177,7 @@
     <EmbeddedResource Include="ShortcutSettings.resx">
       <DependentUpon>ShortcutSettings.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="Config.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Config.Designer.cs</LastGenOutput>
-    </None>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

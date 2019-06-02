@@ -10,7 +10,9 @@ using System.Windows.Forms;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using Microsoft.Win32;
+//using Microsoft.Win32;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace Death_Game_Launcher
 {
@@ -29,40 +31,90 @@ namespace Death_Game_Launcher
         //Form that just displays a loading circle animation, used while scanning for games
         private LoadingForm _loadingForm = new LoadingForm();
         //Registry path to application settings
-        private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+        //private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+        private readonly string _cfgPath;
+        private Config cfg;
 
         //The thread worker class used to scan for Steam games
         ScanThreadWorker worker;
 
         Thread loadingThread;
-
+        //Logger instance to be used for logging throughout the application
         public static Logger _log;
 
         public Form1()
         {
             InitializeComponent();
+            //
+            _cfgPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeathApplications");
+            if (!Directory.Exists(_cfgPath))
+                Directory.CreateDirectory(_cfgPath);
+            _cfgPath = Path.Combine(_cfgPath, "DLG");
+            if (!Directory.Exists(_cfgPath))
+                Directory.CreateDirectory(_cfgPath);
+            //_cfgPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeathApplications", "DLG");
+            if (File.Exists(Path.Combine(_cfgPath, "config.cfg")))
+            {
+                StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(_cfgPath, "config.cfg")));
+                cfg = JsonConvert.DeserializeObject<Config>(sr.ReadToEnd());
+                sr.Close();
+                sr.Dispose();
+            }
+            else
+                cfg = new Config()
+                {
+                    LogLvl = Logger.ERROR,
+                    CloseOnLaunch = false
+                };
+            if (!File.Exists(Path.Combine(_cfgPath, "sapps.cfg")))
+            {
+                List<SAppJson> t = new List<SAppJson>(new SAppJson[]
+                {
+                    new SAppJson() { SApp = new SettingsApp()
+                    {
+                        Name = "Default",
+                        Path = "",
+                        Args = "",
+                        HereByDefault = true
+                    } }
+                });
+                StreamWriter sw = new StreamWriter(File.Open(Path.Combine(_cfgPath, "sapps.cfg"), FileMode.OpenOrCreate));
+                sw.WriteLine(JsonConvert.SerializeObject(t, Formatting.Indented));
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
+            }
             //Initialize the Logger
-            _log = new Logger((int)Registry.GetValue(regpath, "logLvl", 2));
+            _log = new Logger(cfg.LogLvl, Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DLG-Log.txt"));
+            _log.Debug("Logger initialized.");
             //If the user wants to scan for Steam games
             if (MessageBox.Show("Scan for installed Steam games?", "Continue?", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
+                _log.Debug("Starting Steam game scan.");
                 //Show loading animation
                 loadingThread = new Thread(new ThreadStart(TW));
+                _log.Debug("Showing loading animation...");
                 loadingThread.Start();
                 //Used to tell other methods to scan for Steam games after certain events
                 _scannedSteam = true;
                 //Set the ThreadWorker to a new instance with the correct Event Handler
+                _log.Debug("Declaring scanner thread worker.");
                 worker = new ScanThreadWorker();
                 worker.ThreadDone += HandleThreadDone;
                 //New Thread to scan for Steam games
+                _log.Debug("Declaring scanner thread.");
                 Thread thread = new Thread(worker.Run)
                 { Name = "SteamScanThread" };
+                _log.Debug("Starting scanner thread.");
                 //Start scanning
                 thread.Start();
             }
             //Otherwise just set threadDone to true, since HandleThreadDone won't be triggered
             else
+            {
+                _log.Debug("Skipping Steam scan.");
                 threadDone = true;
+            }
             //Call method to list out the games
             WaitForThreadDone();
         }
@@ -70,23 +122,35 @@ namespace Death_Game_Launcher
         private void WaitForThreadDone()
         {
             //Waits until the scanning Thread is done (if it ran at all)
+            if (worker != null) _log.Debug("Waiting for scanning to finish");
             while (!threadDone) { }
             //Array to hold the games found by the scanning Thread
             Manifest[] manifests = new Manifest[0];
             //If the ThreadWorker was set (essentially if the scanning thread was ran)
             if (worker != null)
+            {
+                _log.Debug("Copying Steam scan results.");
                 //Copy the array the ThreadWorker got into manifests
                 manifests = worker.Value;
+            }
             //If there are any Steam games found, add them to _gamesList
             if (manifests != null && manifests.Length > 0)
+            {
+                _log.Debug("Adding Steam scan results to games list.");
                 _gamesList.AddRange(manifests);
+            }
             //Calls ReadGames to add local games, remove exclusions, and makes changes to games
+            _log.Debug("Reading in game configurations...");
             ReadGames();
             //Calls ListGames to list out all the games found
+            _log.Debug("Displaying games found.");
             ListGames(_gamesList.ToArray());
             //Close the loading animation, if it was shown at all
             if (loadingThread != null)
+            {
+                _log.Debug("Killing loading animation.");
                 loadingThread.Abort();
+            }
             //Resets threadDone to false for the next time the method is called
             threadDone = false;
             //Resets worker to nothing for the next time it's needed
@@ -108,17 +172,41 @@ namespace Death_Game_Launcher
         //Reads through the user-made changes
         private void ReadGames()
         {
+            _log.Debug("Attempting to read game inclusions...");
             //Inclusions
             try
             {
+                _log.Debug("Fetching Inclusions.");
                 //Return value for the Inclusions entry
-                string[] ret = (string[])Registry.GetValue(regpath, "Inclusions", null);
+                //string[] ret = (string[])Registry.GetValue(regpath, "Inclusions", null);
+                string path = Path.Combine(_cfgPath, "inclusions.cfg");
+                if (File.Exists(path))
+                {
+                    StreamReader sr = new StreamReader(File.OpenRead(path));
+                    List<InclusionJson> inclusionsJ = JsonConvert.DeserializeObject<List<InclusionJson>>(sr.ReadToEnd());
+                    sr.Close();
+                    sr.Dispose();
+                    foreach (InclusionJson ij in inclusionsJ)
+                    {
+                        this._gamesList.Add(new Manifest()
+                        {
+                            name = ij.Game.Name,
+                            path = ij.Game.Path,
+                            args = ij.Game.Args,
+                            steamLaunch = ij.Game.SteamLaunch,
+                            useShortcut = ij.Game.ShortcutLaunch,
+                            useSettingsApp = ij.Game.UseSApp,
+                            settingsApp = ParseSAppID(ij.Game.SApp)
+                        });
+                    }
+                }
                 //If there is a value found
-                if (ret != null && ret.Length > 0)
+                /*if (ret != null && ret.Length > 0)
                 {
                     //Manifest to be added to _gamesList
                     Manifest manifest = new Manifest();
                     //Run through each line from the return value
+                    _log.Debug("Reading through values...");
                     foreach (string s in ret)
                     {
                         string[] arr = s.Split('"');
@@ -126,9 +214,11 @@ namespace Death_Game_Launcher
                         {
                             //Skips the opening bracket
                             case "{":
+                                _log.Debug("Start of new game values.");
                                 break;
                             //At each closing bracket, save the currently found game to _gamesList and reset manifest to a blank manifest
                             case "}":
+                                _log.Debug("End of current game\'s values, saving.");
                                 this._gamesList.Add(manifest);
                                 manifest = new Manifest();
                                 break;
@@ -137,22 +227,39 @@ namespace Death_Game_Launcher
                                 switch (arr[1].ToLower().Trim())
                                 {
                                     case "name":
+                                        _log.Debug("Current game's name is " + arr[arr.Length - 2]);
                                         manifest.name = arr[arr.Length - 2];
                                         break;
                                     case "path":
+                                        _log.Debug("Current game's path is " + arr[arr.Length - 2]);
                                         manifest.path = arr[arr.Length - 2];
                                         break;
+                                    case "args":
+                                        _log.Debug("Current game's arguments are " + arr[arr.Length - 2]);
+                                        manifest.args = arr[arr.Length - 2];
+                                        break;
                                     case "steam":
+                                        _log.Debug("Current game will" + (bool.Parse(arr[arr.Length - 2]) ? " " : " not ") + "launch through Steam.");
                                         manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
                                         break;
                                     case "shortcut":
+                                        _log.Debug("Current game will" + (bool.Parse(arr[arr.Length - 2]) ? " " : " not ") + "launch through a shortcut.");
                                         manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "usesapp":
+                                        _log.Debug("Current game will" + (bool.Parse(arr[arr.Length - 2]) ? " " : " not ") + "use an external settings app.");
+                                        manifest.useSettingsApp = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "sapp":
+                                        manifest.settingsApp = ParseSAppID(arr[arr.Length - 2]);
                                         break;
                                 }
                                 break;
                         }
                     }
                 }
+                else
+                    _log.Debug("No Inclusions found.");*/
             }
             catch (Exception e)
             {
@@ -171,9 +278,56 @@ namespace Death_Game_Launcher
                 //Makes sure modifications List is empty (avoids duplications caused by loading the modifications Form and exiting by saving even though there were no changes made)
                 this._gameMods = new List<Manifest[]>();
                 //Return value from the Modifications entry
-                string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
+                //string[] ret = (string[])Registry.GetValue(regpath, "Modifications", null);
+                string path = Path.Combine(_cfgPath, "modifications.cfg");
+                if (File.Exists(path))
+                {
+                    StreamReader sr = new StreamReader(File.OpenRead(path));
+                    List<ModJson> modsJ = JsonConvert.DeserializeObject<List<ModJson>>(sr.ReadToEnd());
+                    sr.Close();
+                    sr.Dispose();
+                    foreach (ModJson m in modsJ)
+                    {
+                        this._gameMods.Add(new Manifest[]
+                        {
+                            new Manifest()
+                            {
+                                name = m.Mod.OldName,
+                                path = m.Mod.OldPath,
+                                args = m.Mod.OldArgs,
+                                steamLaunch = m.Mod.OldSteam,
+                                useShortcut = m.Mod.OldShort,
+                                useSettingsApp = m.Mod.OldUseSApp,
+                                settingsApp = ParseSAppID(m.Mod.OldSApp)
+                            },
+                            new Manifest()
+                            {
+                                name = m.Mod.NewName,
+                                path = m.Mod.NewPath,
+                                args = m.Mod.NewArgs,
+                                steamLaunch = m.Mod.NewSteam,
+                                useShortcut = m.Mod.NewShort,
+                                useSettingsApp = m.Mod.NewUseSApp,
+                                settingsApp = ParseSAppID(m.Mod.NewSApp)
+                            }
+                        });
+                    }
+                }
+                foreach (Manifest[] ma in this._gameMods.ToArray())
+                {
+                    //First tries to remove the game that doesn't have the modifications from _gameList
+                    //True if the game was found and removed, false if not
+                    bool found = this._gamesList.Remove(ma[0]);
+                    //Only adds the modified game details if the old ones were found
+                    //Prevents listing a Steam game when the user did not scan for Steam games when launching
+                    if (found)
+                    {
+                        //Adds in the new game details
+                        this._gamesList.Add(ma[1]);
+                    }
+                }
                 //If the return value wasn't empty
-                if (ret != null && ret.Length > 0)
+                /*if (ret != null && ret.Length > 0)
                 {
                     //Temporary variable for reading in the modifications
                     Manifest[] manifests = new Manifest[] { new Manifest(), new Manifest() };
@@ -208,11 +362,20 @@ namespace Death_Game_Launcher
                                     case "path":
                                         manifests[i].path = arr[arr.Length - 2];
                                         break;
+                                    case "args":
+                                        manifests[i].args = arr[arr.Length - 2];
+                                        break;
                                     case "steam":
                                         manifests[i].steamLaunch = bool.Parse(arr[arr.Length - 2]);
                                         break;
                                     case "shortcut":
                                         manifests[i].useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "usesapp":
+                                        manifests[i].useSettingsApp = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "sapp":
+                                        manifests[i].settingsApp = ParseSAppID(arr[arr.Length - 2]);
                                         break;
                                 }
                                 break;
@@ -226,13 +389,13 @@ namespace Death_Game_Launcher
                         bool found = this._gamesList.Remove(ma[0]);
                         //Only adds the modified game details if the old ones were found
                         //Prevents listing a Steam game when the user did not scan for Steam games when launching
-                        if (found)
+                        if (found || true)
                         {
                             //Adds in the new game details
                             this._gamesList.Add(ma[1]);
                         }
                     }
-                }
+                }*/
             }
             catch (Exception e)
             {
@@ -240,8 +403,6 @@ namespace Death_Game_Launcher
                 this._gameMods = holdmod;
                 //Logs error of failed load from Modifications
                 _log.Error(e, "Failed to load modification list.");
-                //Displays error
-                //MessageBox.Show("Failed to load modification list:\n" + e.Message);
             }
             //
             //Temporary variable to hold the exclusions List incase the try block fails after erasing the exclusions List
@@ -252,12 +413,33 @@ namespace Death_Game_Launcher
                 //Clears the exclusions List before reading anything, avoiding duplication in the case of opening the Exclusions Form and saving it without changing anything
                 this._exclusionsList = new List<Manifest>();
                 //Return value from the Exclusions entry
-                string[] ret = (string[])Registry.GetValue(regpath, "Exclusions", null);
-                //Temporary variable for reading in excluded games
-                Manifest manifest = new Manifest();
-                //If the return value is not empty
-                if (ret != null && ret.Length > 0)
+                //string[] ret = (string[])Registry.GetValue(regpath, "Exclusions", null);
+                string path = Path.Combine(_cfgPath, "exclusions.cfg");
+                if (File.Exists(path))
                 {
+                    StreamReader sr = new StreamReader(File.OpenRead(path));
+                    List<ExJson> exj = JsonConvert.DeserializeObject<List<ExJson>>(sr.ReadToEnd());
+                    sr.Close();
+                    sr.Dispose();
+                    foreach (ExJson x in exj)
+                        this._exclusionsList.Add(new Manifest()
+                        {
+                            name = x.Ex.Name,
+                            path = x.Ex.Path,
+                            args = x.Ex.Args,
+                            steamLaunch = x.Ex.SteamLaunch,
+                            useShortcut = x.Ex.UseShortcut,
+                            useSettingsApp = x.Ex.UseSApp,
+                            settingsApp = ParseSAppID(x.Ex.SApp)
+                        });
+                }
+                foreach (Manifest m in _exclusionsList.ToArray())
+                    _gamesList.Remove(m);
+                //If the return value is not empty
+                /*if (ret != null && ret.Length > 0)
+                {
+                    //Temporary variable for reading in excluded games
+                    Manifest manifest = new Manifest();
                     foreach (string s in ret)
                     {
                         string[] arr = s.Split('"');
@@ -281,11 +463,20 @@ namespace Death_Game_Launcher
                                     case "path":
                                         manifest.path = arr[arr.Length - 2];
                                         break;
+                                    case "args":
+                                        manifest.args = arr[arr.Length - 2];
+                                        break;
                                     case "steam":
                                         manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
                                         break;
                                     case "shortcut":
                                         manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "usesapp":
+                                        manifest.useSettingsApp = bool.Parse(arr[arr.Length - 2]);
+                                        break;
+                                    case "sapp":
+                                        manifest.settingsApp = ParseSAppID(arr[arr.Length - 2]);
                                         break;
                                 }
                                 break;
@@ -296,7 +487,7 @@ namespace Death_Game_Launcher
                     {
                         _gamesList.Remove(m);
                     }
-                }
+                }*/
             }
             catch (Exception e)
             {
@@ -311,16 +502,49 @@ namespace Death_Game_Launcher
             //Sort the list of games to make the final listing alphabetically sorted
             _gamesList.Sort((x, y) => x.name.CompareTo(y.name));
         }
+        //Decides which settings app is wanted based on the id string
+        private SettingsApp ParseSAppID(string id)
+        {
+            //Read in the saved SettingsApps
+            List<SettingsApp> apps = new List<SettingsApp>();
+            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(_cfgPath, "sapps.cfg")));
+            List<SAppJson> saj = JsonConvert.DeserializeObject<List<SAppJson>>(sr.ReadToEnd());
+            sr.Close();
+            sr.Dispose();
+            foreach (SAppJson sa in saj)
+                apps.Add(sa.SApp);
+
+            /*string[] ret = (string[])Registry.GetValue(regpath, "SettingsApps", new string[0]);
+            if (ret != null && ret.Length > 0)
+            {
+                foreach (string s in ret)
+                {
+                    string[] arr = s.Split('"');
+                    apps.Add(new SettingsApp(arr[1], bool.Parse(arr[3]), arr[5], arr[7], bool.Parse(arr[9])));
+                }
+            }
+            else
+                return null;*/
+            //Loops through all SettingsApps to attempt to find the match to the given id string
+            foreach (SettingsApp a in apps)
+            {
+                if (a.IDString() == id)
+                    return a;
+            }
+            //Shouldn't reach this unless there was no SettingsApp matching the id string
+            return null;
+        }
 
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            cfg.CloseOnLaunch = closeCheckBox.Checked;
             Application.Exit();
             //Saves the state of the 'Close on Launch' check box
-            Config config = new Config
+            /*Config config = new Config
             {
                 CloseOnLaunch = closeCheckBox.Checked
-            };
-            config.Save();
+            };*/
+            //config.Save();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -339,9 +563,19 @@ namespace Death_Game_Launcher
                 AddGameModifications();
                 //Saves the log to a file
                 //string p = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                _log.SaveToFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DLG-Log.txt"));
+                //_log.SaveToFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DLG-Log.txt"));
                 //Saves log level
-                Registry.SetValue(regpath, "logLvl", _log.LogLevel);
+                //Registry.SetValue(regpath, "logLvl", _log.LogLevel);
+                string path = Path.Combine(_cfgPath, "config.cfg");
+                if (File.Exists(path))
+                    File.Delete(path);
+                StreamWriter sw = new StreamWriter(File.Open(path, FileMode.OpenOrCreate));
+                sw.WriteLine(JsonConvert.SerializeObject(cfg, Formatting.Indented));
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
+                _log.Info("Goodbye");
+                _log.Close();
             }
         }
         //Saves local launch games to config file
@@ -349,23 +583,56 @@ namespace Death_Game_Launcher
         {
             try
             {
+                List<InclusionJson> ij = new List<InclusionJson>();
+                foreach (Manifest m in this._gamesList)
+                    if (!m.steamLaunch)
+                        ij.Add(new InclusionJson()
+                        {
+                            Game = new Inclusion()
+                            {
+                                Name = m.name,
+                                Path = m.path,
+                                Args = m.args,
+                                SteamLaunch = m.steamLaunch,
+                                ShortcutLaunch = m.useShortcut,
+                                UseSApp = m.useSettingsApp,
+                                SApp = (m.settingsApp == null) ? "" : m.settingsApp.IDString()
+                                //SApp = m.settingsApp.IDString()
+                            }
+                        });
+                string path = Path.Combine(_cfgPath, "inclusions.cfg");
+                if (File.Exists(path))
+                    File.Delete(path);
+                StreamWriter sw = new StreamWriter(File.Open(path, FileMode.OpenOrCreate));
+                sw.WriteLine(JsonConvert.SerializeObject(ij, Formatting.Indented));
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
                 //String List to be saved in the registry
-                List<string> games = new List<string>();
+                /*List<string> games = new List<string>();
                 //Loops through each local launch game and adds its details to the games List
                 foreach (Manifest m in this._gamesList)
                 {
                     if (!m.steamLaunch)
                     {
+
                         games.Add("{");
                         games.Add("\t\"name\":\"" + m.name + "\"");
                         games.Add("\t\"path\":\"" + m.path + "\"");
+                        games.Add("\t\"args\":\"" + m.args + "\"");
                         games.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
                         games.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
+                        games.Add("\t\"useSApp\":\"" + m.useSettingsApp + "\"");
+                        games.Add("\t\"SApp\":\"" + ((m.settingsApp != null) ? m.settingsApp.IDString() : "") + "\"");
                         games.Add("}");
                     }
                 }
                 //Converts the games List to an array and saves it to the registry
-                Registry.SetValue(regpath, "Inclusions", games.ToArray());
+                Registry.SetValue(regpath, "Inclusions", games.ToArray());*/
+            }
+            catch (NullReferenceException e)
+            {
+                _log.Error(e, "Caught NullReferenceException while saving added games.");
             }
             catch (Exception e)
             {
@@ -379,8 +646,33 @@ namespace Death_Game_Launcher
         {
             try
             {
+                List<ExJson> xj = new List<ExJson>();
+                foreach (Manifest m in this._exclusionsList)
+                    if (m.steamLaunch)
+                        xj.Add(new ExJson()
+                        {
+                            Ex = new Exclusion()
+                            {
+                                Name = m.name,
+                                Path = m.path,
+                                Args = m.args,
+                                SteamLaunch = m.steamLaunch,
+                                UseShortcut = m.useShortcut,
+                                UseSApp = m.useSettingsApp,
+                                SApp = (m.settingsApp == null) ? "" : m.settingsApp.IDString()
+                                //SApp = m.settingsApp.IDString()
+                            }
+                        });
+                string path = Path.Combine(_cfgPath, "exclusions.cfg");
+                if (File.Exists(path))
+                    File.Delete(path);
+                StreamWriter sw = new StreamWriter(File.Open(path, FileMode.OpenOrCreate));
+                sw.WriteLine(JsonConvert.SerializeObject(xj, Formatting.Indented));
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
                 //String List to be saved in the registry
-                List<string> games = new List<string>();
+                /*List<string> games = new List<string>();
                 //Loops through each excluded game and adds the details to the games List if it is a Steam launch game
                 foreach (Manifest m in this._exclusionsList)
                 {
@@ -389,13 +681,20 @@ namespace Death_Game_Launcher
                         games.Add("{");
                         games.Add("\t\"name\":\"" + m.name + "\"");
                         games.Add("\t\"path\":\"" + m.path + "\"");
+                        games.Add("\t\"args\":\"" + m.args + "\"");
                         games.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
                         games.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
+                        games.Add("\t\"useSApp\":\"" + m.useSettingsApp + "\"");
+                        games.Add("\t\"SApp\":\"" + ((m.settingsApp != null) ? m.settingsApp.IDString() : "") + "\"");
                         games.Add("}");
                     }
                 }
                 //Converts games to an array and saves it to the registry
-                Registry.SetValue(regpath, "Exclusions", games.ToArray());
+                Registry.SetValue(regpath, "Exclusions", games.ToArray());*/
+            }
+            catch (NullReferenceException e)
+            {
+                _log.Error(e, "Caught NullReferenceException while saving excluded games.");
             }
             catch (Exception e)
             {
@@ -412,8 +711,41 @@ namespace Death_Game_Launcher
             this._gameMods = ElimChains(this._gameMods);
             try
             {
+                List<ModJson> mj = new List<ModJson>();
+                foreach (Manifest[] m in this._gameMods)
+                    if (m[0].steamLaunch || m[1].steamLaunch)
+                        mj.Add(new ModJson()
+                        {
+                            Mod = new Modification()
+                            {
+                                OldName = m[0].name,
+                                OldPath = m[0].path,
+                                OldArgs = m[0].args,
+                                OldSteam = m[0].steamLaunch,
+                                OldShort = m[0].useShortcut,
+                                OldUseSApp = m[0].useSettingsApp,
+                                OldSApp = (m[0].settingsApp == null) ? "" : m[0].settingsApp.IDString(),
+                                //OldSApp = m[0].settingsApp.IDString(),
+                                NewName = m[1].name,
+                                NewPath = m[1].path,
+                                NewArgs = m[1].args,
+                                NewSteam = m[1].steamLaunch,
+                                NewShort = m[1].useShortcut,
+                                NewUseSApp = m[1].useSettingsApp,
+                                NewSApp = (m[1].settingsApp == null) ? "" : m[1].settingsApp.IDString()
+                                //NewSApp = m[1].settingsApp.IDString()
+                            }
+                        });
+                string path = Path.Combine(_cfgPath, "modifications.cfg");
+                if (File.Exists(path))
+                    File.Delete(path);
+                StreamWriter sw = new StreamWriter(File.Open(path, FileMode.OpenOrCreate));
+                sw.WriteLine(JsonConvert.SerializeObject(mj, Formatting.Indented));
+                sw.Flush();
+                sw.Close();
+                sw.Dispose();
                 //String List to be saved in the registry
-                List<string> games = new List<string>();
+                /*List<string> games = new List<string>();
                 //Loops through each game change and adds the details to games if the games is a Steam launch either before or after changes
                 foreach (Manifest[] m in this._gameMods)
                 {
@@ -422,17 +754,27 @@ namespace Death_Game_Launcher
                         games.Add("{");
                         games.Add("\t\"name\":\"" + m[0].name + "\"");
                         games.Add("\t\"path\":\"" + m[0].path + "\"");
+                        games.Add("\t\"args\":\"" + m[0].args + "\"");
                         games.Add("\t\"steam\":\"" + m[0].steamLaunch + "\"");
                         games.Add("\t\"shortcut\":\"" + m[0].useShortcut + "\"");
+                        games.Add("\t\"useSApp\":\"" + m[0].useSettingsApp + "\"");
+                        games.Add("\t\"SApp\":\"" + ((m[0].settingsApp != null) ? m[0].settingsApp.IDString() : "")  + "\"");
                         games.Add(";");
                         games.Add("\t\"name\":\"" + m[1].name + "\"");
                         games.Add("\t\"path\":\"" + m[1].path + "\"");
+                        games.Add("\t\"args\":\"" + m[1].args + "\"");
                         games.Add("\t\"steam\":\"" + m[1].steamLaunch + "\"");
                         games.Add("\t\"shortcut\":\"" + m[1].useShortcut + "\"");
+                        games.Add("\t\"useSApp\":\"" +  m[1].useSettingsApp + "\"");
+                        games.Add("\t\"SApp\":\"" + ((m[1].settingsApp != null) ? m[1].settingsApp.IDString() : "")  + "\"");
                         games.Add("}");
                     }
                 }
-                Registry.SetValue(regpath, "Modifications", games.ToArray());
+                Registry.SetValue(regpath, "Modifications", games.ToArray());*/
+            }
+            catch (NullReferenceException e)
+            {
+                _log.Error(e, "Caught NullReferenceException while saving edits to games in listing.");
             }
             catch (Exception e)
             {
@@ -451,7 +793,7 @@ namespace Death_Game_Launcher
             List<Manifest[]> r = new List<Manifest[]>();
             //Bool to track if there were any chains found and fixed
             //Used to end recursive element
-            bool b = false;
+            bool found = false;
             //Loops through each change that was given in the input
             for (int i = 0; i < m.Length; i++)
             {
@@ -464,7 +806,7 @@ namespace Death_Game_Launcher
                     if (m[i][0] == m[i - 1][1])
                     {
                         //A chain has been found
-                        b = true;
+                        found = true;
                         //Remove the previous change from the return list to prevent duplicates
                         r.Remove(r.Last());
                         //Add the 'old' details of the previous change and the 'new' details of the current change to the return list, eliminating the link between the two and merging them into a single change
@@ -475,7 +817,7 @@ namespace Death_Game_Launcher
                 }
             }
             //If there were any links found, recursively run the method again to check for any remaining chains, though this may be unnecessary, otherwise just return the list that won't contain direct chains
-            if (b)
+            if (found)
                 return ElimChains(r);
             else
                 return r;
@@ -524,17 +866,18 @@ namespace Death_Game_Launcher
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.closeCheckBox.Checked = new Config().CloseOnLaunch;
+            this.closeCheckBox.Checked = cfg.CloseOnLaunch;
         }
 
         //Saves changes to the 'Close on Launch' setting
         private void CloseCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            Config config = new Config
+            this.cfg.CloseOnLaunch = closeCheckBox.Checked;
+            /*Config config = new Config
             {
                 CloseOnLaunch = closeCheckBox.Checked
             };
-            config.Save();
+            config.Save();*/
         }
 
         //Called by 'Add Game' button in menu strip
@@ -554,14 +897,18 @@ namespace Death_Game_Launcher
                         {
                             name = g.name,
                             path = g.path,
+                            args = g.args,
                             steamLaunch = g.isSteam,
-                            useShortcut = g.useShortcut
+                            useShortcut = g.useShortcut,
+                            useSettingsApp = g.useSettingsApp,
+                            settingsApp = g.settingsApp
                         });
                     }
                     //Adds games to the list of games to be displayed
                     this._gamesList.AddRange(manifests.ToArray<Manifest>());
                     //Sorts games list alphabetically
                     this._gamesList.Sort((x, y) => x.name.CompareTo(y.name));
+                    AddSavedGames();
                     //Re-lists the games
                     ListGames(this._gamesList.ToArray<Manifest>());
                 }
@@ -585,7 +932,7 @@ namespace Death_Game_Launcher
             }
             //If the game was not found in the games list, notify
             //Should never have to run this, since all listed games should always be in the games list
-            else _log.Warn("Error removing game during RemoveGame(Manifest manifest) in Form1.cs. Game not found in games list."); //MessageBox.Show("Error removing game. Game not found in games list.");
+            else _log.Warn("Error removing game during RemoveGame(Manifest manifest) in Form1.cs. Game not found in games list.");
         }
 
         //Used by 'Grouping' class for updating game info
@@ -633,9 +980,9 @@ namespace Death_Game_Launcher
             if (this._exclusionsList.Count > 0)
             {
                 //Saves the list of excluded games
-                AddExcludedGames();
+                //AddExcludedGames();
                 //Using the form that will display all the excluded games
-                using (var form = new ExclusionsForm())
+                using (var form = new ExclusionsForm(this._exclusionsList))
                 {
                     //Shows the Form
                     DialogResult res = form.ShowDialog();
@@ -680,9 +1027,9 @@ namespace Death_Game_Launcher
         private void ChangesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Saves the current list of changes to games
-            AddGameModifications();
+            //AddGameModifications();
             //Using the Form that will list all the changes saved
-            using (ModificationsForm form = new ModificationsForm())
+            using (ModificationsForm form = new ModificationsForm(this._gameMods))
             {
                 //Shows the form
                 DialogResult res = form.ShowDialog();
@@ -742,6 +1089,7 @@ namespace Death_Game_Launcher
                 if (res == DialogResult.OK)
                 {
                     _log.LogLevel = form.Level;
+                    cfg.LogLvl = form.Level;
                 }
             }
         }
@@ -825,7 +1173,7 @@ namespace Death_Game_Launcher
                 //If the game is a Steam launch, use Windows Explorer to call the Steam run game command
                 if (this.Manifest.steamLaunch)
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", "steam://rungameid/" + this.Manifest.path);
+                    Process.Start("explorer.exe", "steam://rungameid/" + this.Manifest.path);
                 }
                 else
                 {
@@ -840,7 +1188,7 @@ namespace Death_Game_Launcher
                         //Creates the shortcut
                         IWshRuntimeLibrary.IWshShortcut wsh = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(spath);
                         //Sets the launch path for the shortcut
-                        wsh.TargetPath = this.Manifest.path;
+                        wsh.TargetPath = this.Manifest.path;// + ((this.Manifest.args != null) ? " " + this.Manifest.args : "");
                         string[] t = this.Manifest.path.Split('\\');
                         string tpath = "";
                         //Gets the full path of the executable, except for the executable file itself, leaving the folder that will be used as the working directory
@@ -853,12 +1201,12 @@ namespace Death_Game_Launcher
                         wsh.WorkingDirectory = tpath;
                         wsh.Save();
                         //Launches the game through the shortcut
-                        System.Diagnostics.Process.Start(spath);
+                        Process.Start(spath, this.Manifest.args);
                     }
                     else
                     {
                         //Launches the game
-                        System.Diagnostics.Process.Start(this.Manifest.path);
+                        Process.Start(this.Manifest.path, this.Manifest.args);
                     }
                 }
                 this._parent.FlagExit(new Config().CloseOnLaunch);
@@ -890,12 +1238,37 @@ namespace Death_Game_Launcher
         //Used to launch external game settings apps based on which game it is, defaults to the launcher shortcut settings for that game
         private void Settings_App(object sender, EventArgs e)
         {
-            if (this.Manifest.steamLaunch)
-                SettingsSwitch(this.Manifest.path);
-            else if (this.Manifest.useSettingsApp)
-                SettingsSwitch(this.Manifest.settingsApp);
-            else
-                SettingsSwitch("");
+            try
+            {
+                if (this.Manifest.settingsApp.IDString().ToLower() != "sapp:default:::1")
+                {
+                    if (this.Manifest.settingsApp.Path != null && this.Manifest.settingsApp.Path != "")
+                    {
+                        try
+                        {
+                            Form1._log.Info("Attempting to start external settings application \"" + this.Manifest.settingsApp.Name + "\" at path \"" + this.Manifest.settingsApp.Path + "\"...");
+                            Process.Start(this.Manifest.settingsApp.Path, this.Manifest.settingsApp.Args);
+                        }
+                        catch (Exception ex)
+                        {
+                            Form1._log.Error(ex, "Failed to start external settings application, defaulting to shortcut settings.");
+                            Short(sender, e);
+                        }
+                    }
+                    else
+                    {
+                        Form1._log.Warn("Cannot launch external settings app \"" + this.Manifest.settingsApp.Name + "\", path is empty.");
+                        Short(sender, e);
+                    }
+                }
+                else
+                    SettingsSwitch(this.Manifest.path);
+            }
+            catch(Exception ez)
+            {
+                Form1._log.Error(ez, "Failed to launch custom settings application.");
+                Short(sender, e);
+            }
         }
         private void SettingsSwitch(string test)
         {
@@ -914,7 +1287,7 @@ namespace Death_Game_Launcher
                             sr.Close();
                             sr.Dispose();
                             //Launch the application at the path found with the argument 'nolaunch' to hide the launch button in the application
-                            System.Diagnostics.Process.Start(path, "nolaunch");
+                            Process.Start(path, "nolaunch");
                         }
                         //Incase of any failure, default to shortcut settings
                         catch { Short(this, EventArgs.Empty); }
@@ -936,7 +1309,7 @@ namespace Death_Game_Launcher
                             sr.Close();
                             sr.Dispose();
                             //Launch the application at the path found with the argument 'nolaunch' to hide the launch button in the application
-                            System.Diagnostics.Process.Start(path, "nolaunch");
+                            Process.Start(path, "nolaunch");
                         }
                         //Incase of any failure, default to shortcut settings
                         catch { Short(this, EventArgs.Empty); }
@@ -968,7 +1341,10 @@ namespace Death_Game_Launcher
                         name = form.GameName,
                         path = form.GamePath,
                         steamLaunch = form.IsSteamLaunch,
-                        useShortcut = form.UseShortcut
+                        useShortcut = form.UseShortcut,
+                        useSettingsApp = form.UseSettingsApp,
+                        settingsApp = form.SettingsApp,
+                        args = form.Args
                     };
                     this.Manifest = newMan;
                     this.Text = Truncate(form.GameName, 22);
@@ -989,9 +1365,6 @@ namespace Death_Game_Launcher
         {
             return value.Length <= maxChars ? value : value.Substring(0, maxChars) + "...";
         }
-
-        //Returns the GroupBox control
-        //public GroupBox Group { get { return this/*.groupBox*/; } }
     }
 
     //App Manifest Data
@@ -1002,47 +1375,57 @@ namespace Death_Game_Launcher
         public bool steamLaunch;
         public bool useShortcut;
         public bool useSettingsApp;
-        public string settingsApp;
+        public SettingsApp settingsApp;
+        public string args;
         
         public override string ToString()
         {
-            return "[name:" + name + ", path:" + path + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + "]";
+            return "[name:" + name + ", path:" + path + ", args:" + args + ", steamLaunch:" + steamLaunch + ", useShortcut:" + useShortcut + ", useSApp:" + useSettingsApp + ", SApp:" + ((useSettingsApp) ? settingsApp.IDString() : "") + "]";
         }
         public static bool operator ==(Manifest a, Manifest b)
         {
             return a.name == b.name &&
                 a.path == b.path &&
+                a.args == b.args &&
                 a.steamLaunch == b.steamLaunch &&
-                a.useShortcut == b.useShortcut;
+                a.useShortcut == b.useShortcut &&
+                a.useSettingsApp == b.useSettingsApp &&
+                ((a.useSettingsApp || b.useSettingsApp) ? a.settingsApp == b.settingsApp : true);
         }
         public static bool operator !=(Manifest a, Manifest b)
         {
             return a.name != b.name ||
                 a.path != b.path ||
+                a.args != b.args ||
                 a.steamLaunch != b.steamLaunch ||
-                a.useShortcut != b.useShortcut;
-        }
-        public override int GetHashCode()
-        {
-            var hashCode = -1955659842;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(name);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(path);
-            hashCode = hashCode * -1521134295 + steamLaunch.GetHashCode();
-            hashCode = hashCode * -1521134295 + useShortcut.GetHashCode();
-            return hashCode;
+                a.useShortcut != b.useShortcut ||
+                a.useSettingsApp != b.useSettingsApp ||
+                ((a.useSettingsApp || b.useSettingsApp) ? a.settingsApp != b.settingsApp : false);
         }
         public override bool Equals(object obj)
         {
             if (!(obj is Manifest))
-            {
                 return false;
-            }
-
-            var manifest = (Manifest)obj;
-            return name == manifest.name &&
-                   path == manifest.path &&
-                   steamLaunch == manifest.steamLaunch &&
-                   useShortcut == manifest.useShortcut;
+            Manifest m = (Manifest)obj;
+            return name == m.name &&
+                path == m.path &&
+                args == m.args &&
+                steamLaunch == m.steamLaunch &&
+                useShortcut == m.useShortcut &&
+                useSettingsApp == m.useSettingsApp &&
+                ((useSettingsApp && m.useSettingsApp) ? settingsApp == m.settingsApp : true);
+        }
+        public override int GetHashCode()
+        {
+            var hashCode = -875002707;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(name);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(path);
+            hashCode = hashCode * -1521134295 + steamLaunch.GetHashCode();
+            hashCode = hashCode * -1521134295 + useShortcut.GetHashCode();
+            hashCode = hashCode * -1521134295 + useSettingsApp.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<SettingsApp>.Default.GetHashCode(settingsApp);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(args);
+            return hashCode;
         }
     }
 
@@ -1098,6 +1481,9 @@ namespace Death_Game_Launcher
                             sr.Dispose();
                             //Sets useShortcut to false since launching will not need to use a shortcut for any reason
                             manifest.useShortcut = false;
+                            manifest.useSettingsApp = false;
+                            manifest.settingsApp = null;
+                            manifest.args = "";
                             //Adds the game to the list of games to be returned if it is not already in the list
                             //Should always evaluate true
                             if (!val.Contains(manifest)) val.Add(manifest);
@@ -1155,13 +1541,16 @@ namespace Death_Game_Launcher
                             sr.Dispose();
                             //Sets useShortcut to false since launching will not need to use a shortcut for any reason
                             manifest.useShortcut = false;
+                            manifest.useSettingsApp = false;
+                            manifest.settingsApp = null;
+                            manifest.args = "";
                             //Adds the game to the list of games to be returned if it is not already in the list
                             //Should always evaluate true
                             if (!val.Contains(manifest)) val.Add(manifest);
                         }
                     }
                 }
-                catch (Exception e) { Form1._log.Error(e, "Exception while loading games from user-created Steam library folders"); /*MessageBox.Show("Failed loading games from user-created Steam library folders:\n" + e.Message);*/ }
+                catch (Exception e) { Form1._log.Error(e, "Exception while loading games from user-created Steam library folders"); }
             }
             
             //Sorts the found Games in alphabetical order

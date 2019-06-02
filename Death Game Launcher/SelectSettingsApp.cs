@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿//using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,30 +8,32 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace Death_Game_Launcher
 {
     public partial class SelectSettingsApp : Form
     {
-        private SettingsApp[] apps;
+        private SettingsApp[] _apps;
         private Manifest manifest;
         public SelectSettingsApp(Manifest manifest)
         {
             InitializeComponent();
             this.manifest = manifest;
-            apps = Read();
-            List(apps);
+            _apps = Read();
+            List(_apps);
             //select app
             if (manifest.settingsApp != null)
             {
                 foreach (RadioButton rb in this.Controls.Find("radioButton", true))
                 {
-                    if (rb.Text.ToLower() == this.manifest.settingsApp.ToLower())
+                    if (rb.Text.ToLower() == this.manifest.settingsApp.Name.ToLower())
                     {
                         rb.Checked = true;
                         //break;
-                        //Look through apps
-                        foreach (SettingsApp a in apps)
+                        //Look through _apps
+                        foreach (SettingsApp a in _apps)
                         {
                             if (a.Name == rb.Text)
                             {
@@ -43,11 +45,19 @@ namespace Death_Game_Launcher
                     }
                 }
             }
+            foreach (SettingsApp a in _apps)
+                Form1._log.Info(a.IDString());
         }
         private SettingsApp[] Read()
         {
             List<SettingsApp> apps = new List<SettingsApp>();
-            string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
+            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeathApplications", "DLG", "sapps.cfg")));
+            List<SAppJson> sa = JsonConvert.DeserializeObject<List<SAppJson>>(sr.ReadToEnd());
+            sr.Close();
+            sr.Dispose();
+            foreach (SAppJson s in sa)
+                apps.Add(s.SApp);
+            /*string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
             string[] ret = (string[])Registry.GetValue(regpath, "SettingsApps", new string[0]);
             if (ret != null && ret.Length > 0)
             {
@@ -56,7 +66,7 @@ namespace Death_Game_Launcher
                     string[] arr = s.Split('"');
                     apps.Add(new SettingsApp(arr[1], bool.Parse(arr[3]), arr[5], arr[7], bool.Parse(arr[9])));
                 }
-            }
+            }*/
             return apps.ToArray();
         }
         private int[] location = new int[] { 12, -11 };
@@ -80,7 +90,7 @@ namespace Death_Game_Launcher
         {
             //MessageBox.Show(((RadioButton)sender).Text);
             string s = ((RadioButton)sender).Text;
-            foreach (SettingsApp sa in apps)
+            foreach (SettingsApp sa in _apps)
             {
                 if (s == sa.Name)
                 {

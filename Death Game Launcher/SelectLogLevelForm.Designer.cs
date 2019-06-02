@@ -39,10 +39,10 @@
             // infoRadio
             // 
             this.infoRadio.AutoSize = true;
-            this.infoRadio.Location = new System.Drawing.Point(12, 12);
+            this.infoRadio.Location = new System.Drawing.Point(12, 35);
             this.infoRadio.Name = "infoRadio";
             this.infoRadio.Size = new System.Drawing.Size(43, 17);
-            this.infoRadio.TabIndex = 0;
+            this.infoRadio.TabIndex = 1;
             this.infoRadio.TabStop = true;
             this.infoRadio.Tag = "INFO";
             this.infoRadio.Text = "Info";
@@ -52,14 +52,15 @@
             // debugRadio
             // 
             this.debugRadio.AutoSize = true;
-            this.debugRadio.Enabled = false;
-            this.debugRadio.Location = new System.Drawing.Point(12, 35);
+            this.debugRadio.Location = new System.Drawing.Point(12, 12);
             this.debugRadio.Name = "debugRadio";
             this.debugRadio.Size = new System.Drawing.Size(57, 17);
-            this.debugRadio.TabIndex = 1;
+            this.debugRadio.TabIndex = 0;
             this.debugRadio.TabStop = true;
+            this.debugRadio.Tag = "DEBUG";
             this.debugRadio.Text = "Debug";
             this.debugRadio.UseVisualStyleBackColor = true;
+            this.debugRadio.Click += new System.EventHandler(this.Radio_Click);
             // 
             // warnRadio
             // 
@@ -94,6 +95,7 @@
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(75, 23);
             this.cancelBtn.TabIndex = 4;
+            this.cancelBtn.TabStop = false;
             this.cancelBtn.Text = "Cancel";
             this.cancelBtn.UseVisualStyleBackColor = true;
             this.cancelBtn.Click += new System.EventHandler(this.Cancel_Click);
@@ -105,6 +107,7 @@
             this.acceptBtn.Name = "acceptBtn";
             this.acceptBtn.Size = new System.Drawing.Size(75, 23);
             this.acceptBtn.TabIndex = 5;
+            this.acceptBtn.TabStop = false;
             this.acceptBtn.Text = "Accept";
             this.acceptBtn.UseVisualStyleBackColor = true;
             this.acceptBtn.Click += new System.EventHandler(this.Accept_Click);

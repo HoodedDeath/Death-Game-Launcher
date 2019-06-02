@@ -20,7 +20,9 @@ namespace Death_Game_Launcher
             this.GamePath = manifest.path;
             this.IsSteamLaunch = manifest.steamLaunch;
             this.UseShortcut = manifest.useShortcut;
+            this.settingsAppCheckbox.Checked = manifest.useSettingsApp;
             SettingsAppCheckbox_CheckedChanged(this, EventArgs.Empty);
+            this.Args = manifest.args;
         }
 
         ToolTip tip = new ToolTip();
@@ -95,9 +97,10 @@ namespace Death_Game_Launcher
         public bool UseShortcut { get { return this.shortcutCheckBox.Checked; } set { this.shortcutCheckBox.Checked = value; } }
         public string GameName { get { return this.nameBox.Text; } set { this.nameBox.Text = value; } }
         public string GamePath { get { return this.pathBox.Text; } set { this.pathBox.Text = value; } }
+        public string Args { get { return this.argsTextBox.Text; } set { this.argsTextBox.Text = value; } }
         //
         public bool UseSettingsApp { get { return this.settingsAppCheckbox.Checked; } set { this.settingsAppCheckbox.Checked = value; } }
-        public string SettingsApp { get; set; }
+        public SettingsApp SettingsApp { get; set; }
         //
         public Manifest Manifest { get; set; }
         //
@@ -113,13 +116,16 @@ namespace Death_Game_Launcher
 
         private void SelectAppButton_Click(object sender, EventArgs e)
         {
-            //new SelectSettingsApp().ShowDialog();
             using (var form = new SelectSettingsApp(this.Manifest))
             {
                 DialogResult res = form.ShowDialog();
-                Manifest m = this.Manifest;
-                m.settingsApp = form.SelectedApp.Name;
-                this.Manifest = m;
+                if (res == DialogResult.OK)
+                {
+                    Manifest m = this.Manifest;
+                    m.settingsApp = form.SelectedApp;
+                    this.Manifest = m;
+                    this.SettingsApp = form.SelectedApp;
+                }
             }
         }
     }

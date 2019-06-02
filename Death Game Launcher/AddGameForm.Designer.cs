@@ -36,7 +36,7 @@
             // 
             // okButton
             // 
-            this.okButton.Location = new System.Drawing.Point(183, 426);
+            this.okButton.Location = new System.Drawing.Point(187, 453);
             this.okButton.Name = "okButton";
             this.okButton.Size = new System.Drawing.Size(75, 23);
             this.okButton.TabIndex = 1;
@@ -47,7 +47,7 @@
             // cancelButton
             // 
             this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.Location = new System.Drawing.Point(102, 426);
+            this.cancelButton.Location = new System.Drawing.Point(106, 453);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(75, 23);
             this.cancelButton.TabIndex = 2;
@@ -60,12 +60,12 @@
             this.panel1.AutoScroll = true;
             this.panel1.Location = new System.Drawing.Point(12, 12);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(246, 408);
+            this.panel1.Size = new System.Drawing.Size(250, 436);
             this.panel1.TabIndex = 3;
             // 
             // addButton
             // 
-            this.addButton.Location = new System.Drawing.Point(12, 427);
+            this.addButton.Location = new System.Drawing.Point(12, 454);
             this.addButton.Name = "addButton";
             this.addButton.Size = new System.Drawing.Size(75, 23);
             this.addButton.TabIndex = 4;
@@ -80,7 +80,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(284, 459);
+            this.ClientSize = new System.Drawing.Size(285, 486);
             this.ControlBox = false;
             this.Controls.Add(this.addButton);
             this.Controls.Add(this.panel1);
@@ -106,5 +106,6 @@
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button addButton;
+        //
     }
 }
