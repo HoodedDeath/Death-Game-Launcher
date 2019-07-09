@@ -4,6 +4,6 @@ Allows for listing and launching of Steam amd local games, possibly modding in t
 
 Some games have an external application to allow for more options for that specific game
 
-Games that currently have external apps:
--Subnautica
--Terraria (WIP)
+Games that currently have external apps
+- Subnautica
+- Terraria (WIP)
