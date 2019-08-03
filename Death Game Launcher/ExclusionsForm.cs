@@ -1,159 +1,103 @@
-﻿//using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using Death_Game_Launcher;
 
 namespace Death_Game_Launcher
 {
     public partial class ExclusionsForm : Form
     {
-        //Registry path
-        //private const string regpath = "HKEY_CURRENT_USER\\Software\\HoodedDeathApplications\\DeathGameLauncher";
         //List of games to be removed from _gamesList
         public List<Manifest> Exclusions { get; set; } = new List<Manifest>();
 
         public ExclusionsForm(List<Manifest> ex)
         {
+            Form1._log.Debug("Calling ExclusionForm.InitializeCompnent ...");
             InitializeComponent();
+            Form1._log.Debug("ExclusionForm initialized.");
+            //Store the exclusions from ex in Exclusions
             Exclusions = ex;
-            //Read through the Exclusions file
-            //ReadExclusions();
-            //Lists out to found exclusions
+            Form1._log.Debug("Listing exclusions ...");
+            //Lists out exclusions
             List();
         }
         //Used to list out all the exclusions
         private void List()
         {
+            Form1._log.Debug("Entering ExclusionForm.List ...");
             //The current position of the listed item
+            //X position is always 0
+            //Y position is defaulted to -17 to make the math of where each CheckBox is simpler
             int[] pos = new int[] { 0, -17 };
-            //Goes through each Manifest (each exclusion)
+            Form1._log.Debug("Looping through manifests ...");
+            //Goes through each Manifest in Exclusions
             foreach (Manifest m in Exclusions)
             {
+                Form1._log.Debug(string.Format("Adding CheckBox for manifest for {0} ...", m.name));
                 //Adds a new CheckBox to the Panel, with the name of the game in the current Manifest
                 panel1.Controls.Add(new CheckBox()
                 {
+                    //Auto size for text
                     AutoSize = true,
+                    //Default size
                     Size = new Size(80, 17),
+                    //Set Text to name of the game from the current manifest
                     Text = m.name,
+                    //Idk
                     UseVisualStyleBackColor = true,
+                    //Default checked
+                    //Checked items will continue to be excluded
                     Checked = true,
+                    //Location will be:
+                    // X - always 0, aligned left edge of window
+                    // Y - 17 below the previous CheckBox added, adjusting pos[1] simultaneously
                     Location = new Point(pos[0], pos[1] += 17)
                 });
             }
+            Form1._log.Debug("Relocating confirmation buttons.");
             //Repositions the Accept and Cancel buttons to be below the Panel after the Form and Panel auto size
             cancelButton.Location = new Point(cancelButton.Location.X, panel1.Height + 13 + 3 + 3);
             acceptButton.Location = new Point(acceptButton.Location.X, panel1.Height + 13 + 3 + 3);
+            Form1._log.Debug("ExclusionForm.List returning.");
         }
-
-        //Reads through the Exclusions file
-        /*private void ReadExclusions()
-        {
-
-            try
-            {
-                //Return value from the Exclusions registry entry
-                string[] ret = (string[])Registry.GetValue(regpath, "Exclusions", null);
-                //If the return value is not empty
-                if (ret != null && ret.Length > 0)
-                {
-                    //Temporary variable to hold current game's details
-                    Manifest manifest = new Manifest();
-                    //Loops through each string in the return value
-                    foreach (string s in ret)
-                    {
-                        string[] arr = s.Split('"');
-                        switch (arr[0].Trim())
-                        {
-                            //Skips over opening bracket
-                            case "{":
-                                break;
-                            //Copies the current game's details to _exclusionsList and resets manifest
-                            case "}":
-                                _exclusionsList.Add(manifest);
-                                manifest = new Manifest();
-                                break;
-                            //Reads through each line for details for manifest
-                            default:
-                                switch (arr[1].ToLower().Trim())
-                                {
-                                    case "name":
-                                        manifest.name = arr[arr.Length - 2];
-                                        break;
-                                    case "path":
-                                        manifest.path = arr[arr.Length - 2];
-                                        break;
-                                    case "steam":
-                                        manifest.steamLaunch = bool.Parse(arr[arr.Length - 2]);
-                                        break;
-                                    case "shortcut":
-                                        manifest.useShortcut = bool.Parse(arr[arr.Length - 2]);
-                                        break;
-                                }
-                                break;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Form1._log.Error(e, "Failed to load list of Steam game exclusions.");
-                //MessageBox.Show("Failed to load list of Steam game exclusions:\n" + e.Message);
-            }
-
-            //Sorts the List of exclusions
-            this._exclusionsList.Sort((x, y) => x.name.CompareTo(y.name));
-        }*/
 
         //Saves the exclusions to the Exclusions file
         private void AddExclusions()
         {
-            try
+            Form1._log.Debug("Entering ExclusionForm.AddExclusions ...");
+            //Temporary list to keep games that are still excluded
+            List<Manifest> ex = new List<Manifest>();
+            Form1._log.Debug("Looping through controls to find needed exclusions ...");
+            //Loops through each CheckBox in the Panel
+            foreach (CheckBox c in panel1.Controls)
             {
-                List<Manifest> ex = new List<Manifest>();
-                //String List to be saved to the registry
-                List<string> list = new List<string>();
-                //Loops through each CheckBox in the Panel
-                foreach (CheckBox c in panel1.Controls)
+                Form1._log.Debug(string.Format("Looking for manifest for {0} ...", c.Text));
+                //Temporary variable for comparing values
+                Manifest m = new Manifest();
+                //Search for a Manifest whose name matches the current CheckBox
+                foreach (Manifest ma in Exclusions)
                 {
-                    //Temporary variable for comparing values
-                    Manifest m = new Manifest();
-                    //Search for a Manifest whose name matches the current CheckBox
-                    foreach (Manifest ma in Exclusions)
-                    {
-                        if (ma.name == c.Text)
-                        {
-                            m = ma;
-                            break;
-                        }
-                    }
-                    //If m is not empty, it is a Steam launch, and its CheckBox is checked, add the details to list
-                    if (m != new Manifest() && m.steamLaunch && c.Checked)
-                    {
-                        ex.Add(m);
-                        /*list.Add("{");
-                        list.Add("\t\"name\":\"" + m.name + "\"");
-                        list.Add("\t\"path\":\"" + m.path + "\"");
-                        list.Add("\t\"steam\":\"" + m.steamLaunch + "\"");
-                        list.Add("\t\"shortcut\":\"" + m.useShortcut + "\"");
-                        list.Add("}");*/
-                    }
+                    //If the name of the current game's name ( 'ma.name' ) doesn't equal the text in the current check box ( 'c.Text' ), skip back to the top of the loop
+                    if (ma.name != c.Text) continue;
+                    //Store ma in m for later use in the loop
+                    m = ma;
+                    //Break out of this loop since the game matching the checkbox ( 'c' ) has been found
+                    break;
                 }
-                //Converts list to an array and saves it to the registry
-                //Registry.SetValue(regpath, "Exclusions", list.ToArray());
-                Exclusions = ex;
+                //If there was no matching manifest found for this check box, log a warning (since this shouldn't ever happen) and skip back to the top of the loop
+                if (m == new Manifest()) { Form1._log.Warn(string.Format("No manifest matching name '{0}' found during Exclusions Form.", c.Text)); continue; }
+                //If the current game is not a Steam launch, skip back to the top of the loop (since there shouldn't be any non-Steam launch games here)
+                if (!m.steamLaunch) continue;
+                //If the current check box is not checked, skip back to the top of the loop (since only checked games will continue to be excluded)
+                if (!c.Checked) continue;
+                Form1._log.Debug("Adding exclusion to list to keep.");
+                //Add m to the ex list
+                ex.Add(m);
             }
-            catch (Exception e)
-            {
-                Form1._log.Error(e, "Failed to save excluded games.");
-                //MessageBox.Show("Failed to save excluded games:\n" + e.Message);
-            }
+            //Saves the list of apps still excluded ( 'ex' ) to the public Exclusions variable for the parent form to read
+            Exclusions = ex;
+            Form1._log.Debug("ExclusionForm.AddExclusions returning.");
         }
 
         //When the user presses a key
@@ -190,9 +134,10 @@ namespace Death_Game_Launcher
             //If the Form's DialogResult is OK
             if (this.DialogResult == DialogResult.OK)
             {
+                Form1._log.Debug("Exiting Form, calling AddExclusions ...");
                 //Save exclusions
                 AddExclusions();
-                //Exit without confirmation popup
+                //Exit without confirmation pop-up
                 e.Cancel = false;
             }
             //Otherwise, only exit if the user presses 'Yes' on the confirmation popup

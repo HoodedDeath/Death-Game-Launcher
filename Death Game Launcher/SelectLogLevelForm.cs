@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Windows.Forms;
+using HoodedDeathHelperLibrary;
 
 namespace Death_Game_Launcher
 {
     public partial class SelectLogLevelForm : Form
     {
         //Has the selected level changed
-        private bool changed = false;
+        //private bool changed = false;
         //Property to get and set the selected level
         public int Level { get; set; }
         //The original level value given to the Form, used so the Form can silently exit if the user clicks Cancel or Escape and there hasn't been changes to which RadioButton is selected
@@ -58,9 +59,6 @@ namespace Death_Game_Launcher
                     Level = Logger.ERROR;
                     break;
             }
-            //If the level that was just set is not the original value from when the Form started, set changed to true
-            if (Level != original)
-                changed = true;
         }
         //Called when a keyboard key is clicked
         private void SelectLogLevelForm_KeyDown(object sender, KeyEventArgs e)
@@ -68,14 +66,12 @@ namespace Death_Game_Launcher
             //Cancel when the user clicks Escape
             if (e.KeyCode == Keys.Escape)
             {
-                this.DialogResult = DialogResult.Cancel;
-                Close();
+                Cancel_Click(sender, null);
             }
             //Accept when the user clicks Enter
             else if (e.KeyCode == Keys.Enter)
             {
-                this.DialogResult = DialogResult.OK;
-                Close();
+                Accept_Click(sender, null);
             }
         }
         //Called when Accept button is clicked, sets DialogResult to OK and closes Form
@@ -96,7 +92,7 @@ namespace Death_Game_Launcher
             //Otherwise (user clicked Cancel or Escape key):
             // If there were changes made, popup MessageBox for confirming cancel
             // Otherwise, e.Cancel = false (allow Form close)
-            e.Cancel = this.DialogResult == DialogResult.OK ? false : changed ? MessageBox.Show("All changes will be lost", "Are you sure?", MessageBoxButtons.YesNo) != DialogResult.Yes : false;
+            e.Cancel = (this.DialogResult == DialogResult.OK) ? false : ((this.Level != this.original) ? MessageBox.Show("All changes will be lost", "Are you sure?", MessageBoxButtons.YesNo) != DialogResult.Yes : false);
         }
     }
 }

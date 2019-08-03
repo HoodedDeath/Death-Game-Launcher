@@ -60,7 +60,7 @@
             this.launchPathLabel.Size = new System.Drawing.Size(32, 13);
             this.launchPathLabel.TabIndex = 1;
             this.launchPathLabel.Text = "Path:";
-            this.launchPathLabel.MouseLeave += new System.EventHandler(this.LaunchPathLabel_MouseLeave);
+            this.launchPathLabel.MouseLeave += new System.EventHandler(this.Global_MouseLeave);
             this.launchPathLabel.MouseHover += new System.EventHandler(this.LaunchPathLabel_MouseHover);
             // 
             // steamCheckBox
@@ -74,7 +74,7 @@
             this.steamCheckBox.Text = "?Steam Launch";
             this.steamCheckBox.UseVisualStyleBackColor = true;
             this.steamCheckBox.CheckedChanged += new System.EventHandler(this.SteamCheckBox_CheckedChanged);
-            this.steamCheckBox.MouseLeave += new System.EventHandler(this.SteamCheckBox_MouseLeave);
+            this.steamCheckBox.MouseLeave += new System.EventHandler(this.Global_MouseLeave);
             this.steamCheckBox.MouseHover += new System.EventHandler(this.SteamCheckBox_MouseHover);
             // 
             // shortcutCheckBox
@@ -87,7 +87,7 @@
             this.shortcutCheckBox.TabIndex = 6;
             this.shortcutCheckBox.Text = "?Use Shortcut For Launch";
             this.shortcutCheckBox.UseVisualStyleBackColor = true;
-            this.shortcutCheckBox.MouseLeave += new System.EventHandler(this.ShortcutCheckBox_MouseLeave);
+            this.shortcutCheckBox.MouseLeave += new System.EventHandler(this.Global_MouseLeave);
             this.shortcutCheckBox.MouseHover += new System.EventHandler(this.ShortcutCheckBox_MouseHover);
             // 
             // nameBox
@@ -146,7 +146,7 @@
             this.settingsAppCheckbox.Text = "?Use settings app";
             this.settingsAppCheckbox.UseVisualStyleBackColor = true;
             this.settingsAppCheckbox.CheckedChanged += new System.EventHandler(this.SettingsAppCheckbox_CheckedChanged);
-            this.settingsAppCheckbox.MouseLeave += new System.EventHandler(this.SettingsAppCheckBox_MouseLeave);
+            this.settingsAppCheckbox.MouseLeave += new System.EventHandler(this.Global_MouseLeave);
             this.settingsAppCheckbox.MouseHover += new System.EventHandler(this.SettingsAppCheckBox_MouseHover);
             // 
             // selectAppButton
