@@ -1208,7 +1208,8 @@ namespace Death_Game_Launcher
             catch(Exception ez)
             {
                 Form1._log.Error(ez, "Failed to launch custom settings application.");
-                Short(sender, e);
+                //Short(sender, e);
+                SettingsSwitch(this.Manifest.path);
             }
             Form1._log.Debug(string.Format("Grouping(Name>'{0}').Settings_App returning.", this.Manifest.name));
         }
@@ -1278,6 +1279,42 @@ namespace Death_Game_Launcher
                         catch (Exception e)
                         {
                             Form1._log.Error(e, "Failed to launch Subnautica Options.");
+                            Form1._log.Debug("Defaulting to shortcut settings.");
+                            Short(this, EventArgs.Empty);
+                        }
+                    }
+                    //Default to shortcut settings
+                    else
+                    {
+                        Form1._log.Debug("File does not exist. Defaulting to shortcut settings.");
+                        Short(this, EventArgs.Empty);
+                    }
+                    break;
+                //If the path is the Steam game id for Terraria, try to launch the external app for it
+                case "632360": //Risk of Rain 2
+                    Form1._log.Debug("Test matched Risk of Rain 2. Testing for 'RiskOfDeath.txt' ...");
+                    //The external app saves its most recent path to a file in the Appdata\Roaming folder, check if that exists
+                    if (File.Exists(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "RiskOfDeath"), "RiskOfDeath.txt")))
+                    {
+                        Form1._log.Debug("File does exist.");
+                        try
+                        {
+                            Form1._log.Debug("Creating StreamReader for file ...");
+                            //Reads the path from the file
+                            StreamReader sr = new StreamReader(File.OpenRead(Path.Combine(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "HoodedDeath"), "RiskOfDeath"), "RiskOfDeath.txt")));
+                            string path = sr.ReadLine();
+                            Form1._log.Debug(string.Format("Path to RiskOfDeath application was read as {0}.", path));
+                            Form1._log.Debug("Closing StreamReader.");
+                            sr.Close();
+                            sr.Dispose();
+                            Form1._log.Debug(string.Format("Attempting to launch RiskOfDeath at '{0}' ...", path));
+                            //Launch the application at the path found with the argument 'nolaunch' to hide the launch button in the application
+                            Process.Start(path, "nolaunch");
+                        }
+                        //Incase of any failure, default to shortcut settings
+                        catch (Exception e)
+                        {
+                            Form1._log.Error(e, "Failed to launch RiskOfDeath.");
                             Form1._log.Debug("Defaulting to shortcut settings.");
                             Short(this, EventArgs.Empty);
                         }
